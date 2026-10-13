@@ -1,0 +1,197 @@
+// Prisma Schema — Jerawat Hunter
+// Disesuaikan untuk Prisma ORM 7 & PostgreSQL (Neon)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -------------------------------------------------------------
+// MODEL PENGGUNA & AUTENTIKASI
+// -------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?   // Hashed password untuk Credentials (nullable untuk Google OAuth)
+  emailVerified DateTime? // Status verifikasi email dari Google OAuth / Email
+  image         String?   // URL avatar profil dari Google OAuth
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relasi Autentikasi Auth.js & Keamanan
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+
+  // Relasi kepemilikan data (semua catatan terikat ke pengguna)
+  pauseSessions PauseSession[]
+  pickingEvents PickingEvent[]
+  resistances   Resistance[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique // Hash SHA-256 dari token acak mentah
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// -------------------------------------------------------------
+// ENUM UNTUK PILIHAN TERSTRUKTUR
+// -------------------------------------------------------------
+
+// Hasil akhir dari sesi Pause
+enum PauseOutcome {
+  SUCCEEDED        // Berhasil melewati dorongan
+  STILL_RESISTING  // Masih menahan diri
+  PICKED           // Akhirnya melakukan picking
+}
+
+// Jenis picking (Wajib dipilih saat mencatat kejadian picking)
+enum PickingType {
+  SQUEEZE       // Memencet jerawat
+  PEEL          // Mengelupas koreng atau kulit yang sedang sembuh
+  TOUCH_FIDGET  // Meraba atau mengutak-atik kulit tanpa sengaja melukai
+}
+
+// Rentang durasi kejadian picking
+enum DurationRange {
+  UNDER_1_MIN       // Kurang dari 1 menit
+  FROM_1_TO_5_MIN   // 1-5 menit
+  FROM_6_TO_15_MIN  // 6-15 menit
+  FROM_16_TO_30_MIN // 16-30 menit
+  OVER_30_MIN       // Lebih dari 30 menit
+}
+
+// Konteks kejadian picking (pilihan tunggal)
+enum ContextType {
+  ALONE_IN_ROOM         // Sendirian di kamar
+  IN_FRONT_OF_MIRROR    // Di depan cermin atau kamar mandi
+  USING_PHONE_WATCHING  // Saat menggunakan HP atau menonton
+  STUDYING_WORKING      // Saat belajar atau bekerja
+  BEFORE_SLEEP          // Sebelum tidur
+  OTHER_ACTIVITY        // Saat melakukan aktivitas lain
+  OTHER                 // Konteks lainnya
+}
+
+// -------------------------------------------------------------
+// MODEL SESI PAUSE
+// -------------------------------------------------------------
+
+model PauseSession {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  durationSecs Int           // Durasi target yang dipilih (detik: 30, 60, 180, 300, dsb.)
+  startedAt    DateTime      @default(now())
+  endedAt      DateTime?     // Null jika sesi belum selesai / diabaikan
+  endedEarly   Boolean       @default(false)
+  outcome      PauseOutcome? // Null selama sesi masih berjalan
+
+  createdAt    DateTime      @default(now())
+
+  // Relasi 1-ke-1 opsional ke catatan turunan hasil sesi Pause
+  pickingEvent PickingEvent?
+  resistance   Resistance?
+
+  @@index([userId, startedAt])
+}
+
+// -------------------------------------------------------------
+// MODEL KEJADIAN PICKING
+// -------------------------------------------------------------
+
+model PickingEvent {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recordedAt     DateTime       @default(now())
+
+  // Data Wajib
+  pickingType    PickingType
+
+  // Data Opsional — Pilihan Multi-select disimpan sebagai kode stabil (String[])
+  triggers       String[]       // Contoh: TEXTURE_FEEL, MIRROR, DRY_SCAB, STRESS, BOREDOM, AUTOMATIC_HAND, SEEK_RELIEF, OTHER
+  emotions       String[]       // Contoh: ANXIOUS, STRESSED, BORED, FRUSTRATED, NUMB, CURIOUS, SEEK_RELIEF, NEUTRAL, OTHER
+  urgeStrength   Int?           // Skala 1 (Sangat lemah) s/d 5 (Sangat kuat)
+  durationRange  DurationRange?
+  reasons        String[]       // Contoh: REMOVE_TEXTURE, PEEL_DRY_SKIN, SEEK_SATISFACTION, RELIEVE_URGE, WANT_SMOOTH_SKIN, AUTOMATIC_UNCONSCIOUS, OTHER
+  impacts        String[]       // Contoh: RED_IRRITATION, BLEEDING_WOUND, NEW_SCAB, STINGING_PAIN, MARKS_SCARS, TEMPORARY_RELIEF, REGRET_DISAPPOINTED
+  context        ContextType?
+
+  // Relasi opsional ke sesi Pause jika pencatatan ini berawal dari Pause
+  pauseSessionId String?        @unique
+  pauseSession   PauseSession?  @relation(fields: [pauseSessionId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime       @default(now())
+
+  @@index([userId, recordedAt])
+}
+
+// -------------------------------------------------------------
+// MODEL KEBERHASILAN MENAHAN DORONGAN
+// -------------------------------------------------------------
+
+model Resistance {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recordedAt     DateTime      @default(now())
+
+  // Relasi opsional ke sesi Pause jika keberhasilan dicapai melalui Pause
+  pauseSessionId String?       @unique
+  pauseSession   PauseSession? @relation(fields: [pauseSessionId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime      @default(now())
+
+  @@index([userId, recordedAt])
+}
