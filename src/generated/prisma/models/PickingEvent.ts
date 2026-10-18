@@ -38,6 +38,7 @@ export type PickingEventMinAggregateOutputType = {
   id: string | null
   userId: string | null
   recordedAt: Date | null
+  occurredAt: Date | null
   pickingType: $Enums.PickingType | null
   urgeStrength: number | null
   durationRange: $Enums.DurationRange | null
@@ -50,6 +51,7 @@ export type PickingEventMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   recordedAt: Date | null
+  occurredAt: Date | null
   pickingType: $Enums.PickingType | null
   urgeStrength: number | null
   durationRange: $Enums.DurationRange | null
@@ -62,6 +64,7 @@ export type PickingEventCountAggregateOutputType = {
   id: number
   userId: number
   recordedAt: number
+  occurredAt: number
   pickingType: number
   triggers: number
   emotions: number
@@ -88,6 +91,7 @@ export type PickingEventMinAggregateInputType = {
   id?: true
   userId?: true
   recordedAt?: true
+  occurredAt?: true
   pickingType?: true
   urgeStrength?: true
   durationRange?: true
@@ -100,6 +104,7 @@ export type PickingEventMaxAggregateInputType = {
   id?: true
   userId?: true
   recordedAt?: true
+  occurredAt?: true
   pickingType?: true
   urgeStrength?: true
   durationRange?: true
@@ -112,6 +117,7 @@ export type PickingEventCountAggregateInputType = {
   id?: true
   userId?: true
   recordedAt?: true
+  occurredAt?: true
   pickingType?: true
   triggers?: true
   emotions?: true
@@ -215,6 +221,7 @@ export type PickingEventGroupByOutputType = {
   id: string
   userId: string
   recordedAt: Date
+  occurredAt: Date | null
   pickingType: $Enums.PickingType
   triggers: string[]
   emotions: string[]
@@ -254,6 +261,7 @@ export type PickingEventWhereInput = {
   id?: Prisma.StringFilter<"PickingEvent"> | string
   userId?: Prisma.StringFilter<"PickingEvent"> | string
   recordedAt?: Prisma.DateTimeFilter<"PickingEvent"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableFilter<"PickingEvent"> | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFilter<"PickingEvent"> | $Enums.PickingType
   triggers?: Prisma.StringNullableListFilter<"PickingEvent">
   emotions?: Prisma.StringNullableListFilter<"PickingEvent">
@@ -272,6 +280,7 @@ export type PickingEventOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrderInput | Prisma.SortOrder
   pickingType?: Prisma.SortOrder
   triggers?: Prisma.SortOrder
   emotions?: Prisma.SortOrder
@@ -294,6 +303,7 @@ export type PickingEventWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.PickingEventWhereInput | Prisma.PickingEventWhereInput[]
   userId?: Prisma.StringFilter<"PickingEvent"> | string
   recordedAt?: Prisma.DateTimeFilter<"PickingEvent"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableFilter<"PickingEvent"> | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFilter<"PickingEvent"> | $Enums.PickingType
   triggers?: Prisma.StringNullableListFilter<"PickingEvent">
   emotions?: Prisma.StringNullableListFilter<"PickingEvent">
@@ -311,6 +321,7 @@ export type PickingEventOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrderInput | Prisma.SortOrder
   pickingType?: Prisma.SortOrder
   triggers?: Prisma.SortOrder
   emotions?: Prisma.SortOrder
@@ -335,6 +346,7 @@ export type PickingEventScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"PickingEvent"> | string
   userId?: Prisma.StringWithAggregatesFilter<"PickingEvent"> | string
   recordedAt?: Prisma.DateTimeWithAggregatesFilter<"PickingEvent"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PickingEvent"> | Date | string | null
   pickingType?: Prisma.EnumPickingTypeWithAggregatesFilter<"PickingEvent"> | $Enums.PickingType
   triggers?: Prisma.StringNullableListFilter<"PickingEvent">
   emotions?: Prisma.StringNullableListFilter<"PickingEvent">
@@ -350,6 +362,7 @@ export type PickingEventScalarWhereWithAggregatesInput = {
 export type PickingEventCreateInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -367,6 +380,7 @@ export type PickingEventUncheckedCreateInput = {
   id?: string
   userId: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -382,6 +396,7 @@ export type PickingEventUncheckedCreateInput = {
 export type PickingEventUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -399,6 +414,7 @@ export type PickingEventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -415,6 +431,7 @@ export type PickingEventCreateManyInput = {
   id?: string
   userId: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -430,6 +447,7 @@ export type PickingEventCreateManyInput = {
 export type PickingEventUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -445,6 +463,7 @@ export type PickingEventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -484,6 +503,7 @@ export type PickingEventCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrder
   pickingType?: Prisma.SortOrder
   triggers?: Prisma.SortOrder
   emotions?: Prisma.SortOrder
@@ -504,6 +524,7 @@ export type PickingEventMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrder
   pickingType?: Prisma.SortOrder
   urgeStrength?: Prisma.SortOrder
   durationRange?: Prisma.SortOrder
@@ -516,6 +537,7 @@ export type PickingEventMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrder
   pickingType?: Prisma.SortOrder
   urgeStrength?: Prisma.SortOrder
   durationRange?: Prisma.SortOrder
@@ -653,6 +675,7 @@ export type NullableEnumContextTypeFieldUpdateOperationsInput = {
 export type PickingEventCreateWithoutUserInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -668,6 +691,7 @@ export type PickingEventCreateWithoutUserInput = {
 export type PickingEventUncheckedCreateWithoutUserInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -713,6 +737,7 @@ export type PickingEventScalarWhereInput = {
   id?: Prisma.StringFilter<"PickingEvent"> | string
   userId?: Prisma.StringFilter<"PickingEvent"> | string
   recordedAt?: Prisma.DateTimeFilter<"PickingEvent"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableFilter<"PickingEvent"> | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFilter<"PickingEvent"> | $Enums.PickingType
   triggers?: Prisma.StringNullableListFilter<"PickingEvent">
   emotions?: Prisma.StringNullableListFilter<"PickingEvent">
@@ -728,6 +753,7 @@ export type PickingEventScalarWhereInput = {
 export type PickingEventCreateWithoutPauseSessionInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -744,6 +770,7 @@ export type PickingEventUncheckedCreateWithoutPauseSessionInput = {
   id?: string
   userId: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -774,6 +801,7 @@ export type PickingEventUpdateToOneWithWhereWithoutPauseSessionInput = {
 export type PickingEventUpdateWithoutPauseSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -790,6 +818,7 @@ export type PickingEventUncheckedUpdateWithoutPauseSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -804,6 +833,7 @@ export type PickingEventUncheckedUpdateWithoutPauseSessionInput = {
 export type PickingEventCreateManyUserInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
   pickingType: $Enums.PickingType
   triggers?: Prisma.PickingEventCreatetriggersInput | string[]
   emotions?: Prisma.PickingEventCreateemotionsInput | string[]
@@ -819,6 +849,7 @@ export type PickingEventCreateManyUserInput = {
 export type PickingEventUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -834,6 +865,7 @@ export type PickingEventUpdateWithoutUserInput = {
 export type PickingEventUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -849,6 +881,7 @@ export type PickingEventUncheckedUpdateWithoutUserInput = {
 export type PickingEventUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pickingType?: Prisma.EnumPickingTypeFieldUpdateOperationsInput | $Enums.PickingType
   triggers?: Prisma.PickingEventUpdatetriggersInput | string[]
   emotions?: Prisma.PickingEventUpdateemotionsInput | string[]
@@ -867,6 +900,7 @@ export type PickingEventSelect<ExtArgs extends runtime.Types.Extensions.Internal
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
   pickingType?: boolean
   triggers?: boolean
   emotions?: boolean
@@ -885,6 +919,7 @@ export type PickingEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
   pickingType?: boolean
   triggers?: boolean
   emotions?: boolean
@@ -903,6 +938,7 @@ export type PickingEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
   pickingType?: boolean
   triggers?: boolean
   emotions?: boolean
@@ -921,6 +957,7 @@ export type PickingEventSelectScalar = {
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
   pickingType?: boolean
   triggers?: boolean
   emotions?: boolean
@@ -933,7 +970,7 @@ export type PickingEventSelectScalar = {
   createdAt?: boolean
 }
 
-export type PickingEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "recordedAt" | "pickingType" | "triggers" | "emotions" | "urgeStrength" | "durationRange" | "reasons" | "impacts" | "context" | "pauseSessionId" | "createdAt", ExtArgs["result"]["pickingEvent"]>
+export type PickingEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "recordedAt" | "occurredAt" | "pickingType" | "triggers" | "emotions" | "urgeStrength" | "durationRange" | "reasons" | "impacts" | "context" | "pauseSessionId" | "createdAt", ExtArgs["result"]["pickingEvent"]>
 export type PickingEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   pauseSession?: boolean | Prisma.PickingEvent$pauseSessionArgs<ExtArgs>
@@ -957,6 +994,7 @@ export type $PickingEventPayload<ExtArgs extends runtime.Types.Extensions.Intern
     id: string
     userId: string
     recordedAt: Date
+    occurredAt: Date | null
     pickingType: $Enums.PickingType
     triggers: string[]
     emotions: string[]
@@ -1395,6 +1433,7 @@ export interface PickingEventFieldRefs {
   readonly id: Prisma.FieldRef<"PickingEvent", 'String'>
   readonly userId: Prisma.FieldRef<"PickingEvent", 'String'>
   readonly recordedAt: Prisma.FieldRef<"PickingEvent", 'DateTime'>
+  readonly occurredAt: Prisma.FieldRef<"PickingEvent", 'DateTime'>
   readonly pickingType: Prisma.FieldRef<"PickingEvent", 'PickingType'>
   readonly triggers: Prisma.FieldRef<"PickingEvent", 'String[]'>
   readonly emotions: Prisma.FieldRef<"PickingEvent", 'String[]'>

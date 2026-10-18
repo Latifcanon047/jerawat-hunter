@@ -136,6 +136,7 @@ model PauseSession {
   endedAt      DateTime?     // Null jika sesi belum selesai / diabaikan
   endedEarly   Boolean       @default(false)
   outcome      PauseOutcome? // Null selama sesi masih berjalan
+  pickingFollowUpCompleted Boolean       @default(false)
 
   createdAt    DateTime      @default(now())
 
@@ -155,6 +156,7 @@ model PickingEvent {
   userId         String
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   recordedAt     DateTime       @default(now())
+  occurredAt     DateTime?      @db.Timestamptz(3)
 
   // Data Wajib
   pickingType    PickingType
@@ -175,6 +177,7 @@ model PickingEvent {
   createdAt      DateTime       @default(now())
 
   @@index([userId, recordedAt])
+  @@index([userId, occurredAt])
 }
 
 // -------------------------------------------------------------
@@ -186,6 +189,9 @@ model Resistance {
   userId         String
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   recordedAt     DateTime      @default(now())
+  occurredAt     DateTime?     @db.Timestamptz(3)
+  durationSecs   Int?
+  note           String?
 
   // Relasi opsional ke sesi Pause jika keberhasilan dicapai melalui Pause
   pauseSessionId String?       @unique
@@ -194,4 +200,5 @@ model Resistance {
   createdAt      DateTime      @default(now())
 
   @@index([userId, recordedAt])
+  @@index([userId, occurredAt])
 }

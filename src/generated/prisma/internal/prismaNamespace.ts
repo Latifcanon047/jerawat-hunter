@@ -1125,6 +1125,7 @@ export const PauseSessionScalarFieldEnum = {
   endedAt: 'endedAt',
   endedEarly: 'endedEarly',
   outcome: 'outcome',
+  pickingFollowUpCompleted: 'pickingFollowUpCompleted',
   createdAt: 'createdAt'
 } as const
 
@@ -1135,6 +1136,7 @@ export const PickingEventScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   recordedAt: 'recordedAt',
+  occurredAt: 'occurredAt',
   pickingType: 'pickingType',
   triggers: 'triggers',
   emotions: 'emotions',
@@ -1154,6 +1156,9 @@ export const ResistanceScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   recordedAt: 'recordedAt',
+  occurredAt: 'occurredAt',
+  durationSecs: 'durationSecs',
+  note: 'note',
   pauseSessionId: 'pauseSessionId',
   createdAt: 'createdAt'
 } as const

@@ -20,14 +20,27 @@ export type ResistanceModel = runtime.Types.Result.DefaultSelection<Prisma.$Resi
 
 export type AggregateResistance = {
   _count: ResistanceCountAggregateOutputType | null
+  _avg: ResistanceAvgAggregateOutputType | null
+  _sum: ResistanceSumAggregateOutputType | null
   _min: ResistanceMinAggregateOutputType | null
   _max: ResistanceMaxAggregateOutputType | null
+}
+
+export type ResistanceAvgAggregateOutputType = {
+  durationSecs: number | null
+}
+
+export type ResistanceSumAggregateOutputType = {
+  durationSecs: number | null
 }
 
 export type ResistanceMinAggregateOutputType = {
   id: string | null
   userId: string | null
   recordedAt: Date | null
+  occurredAt: Date | null
+  durationSecs: number | null
+  note: string | null
   pauseSessionId: string | null
   createdAt: Date | null
 }
@@ -36,6 +49,9 @@ export type ResistanceMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   recordedAt: Date | null
+  occurredAt: Date | null
+  durationSecs: number | null
+  note: string | null
   pauseSessionId: string | null
   createdAt: Date | null
 }
@@ -44,16 +60,30 @@ export type ResistanceCountAggregateOutputType = {
   id: number
   userId: number
   recordedAt: number
+  occurredAt: number
+  durationSecs: number
+  note: number
   pauseSessionId: number
   createdAt: number
   _all: number
 }
 
 
+export type ResistanceAvgAggregateInputType = {
+  durationSecs?: true
+}
+
+export type ResistanceSumAggregateInputType = {
+  durationSecs?: true
+}
+
 export type ResistanceMinAggregateInputType = {
   id?: true
   userId?: true
   recordedAt?: true
+  occurredAt?: true
+  durationSecs?: true
+  note?: true
   pauseSessionId?: true
   createdAt?: true
 }
@@ -62,6 +92,9 @@ export type ResistanceMaxAggregateInputType = {
   id?: true
   userId?: true
   recordedAt?: true
+  occurredAt?: true
+  durationSecs?: true
+  note?: true
   pauseSessionId?: true
   createdAt?: true
 }
@@ -70,6 +103,9 @@ export type ResistanceCountAggregateInputType = {
   id?: true
   userId?: true
   recordedAt?: true
+  occurredAt?: true
+  durationSecs?: true
+  note?: true
   pauseSessionId?: true
   createdAt?: true
   _all?: true
@@ -82,43 +118,55 @@ export type ResistanceAggregateArgs<ExtArgs extends runtime.Types.Extensions.Int
   where?: Prisma.ResistanceWhereInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-   * 
+   *
    * Determine the order of Resistances to fetch.
    */
   orderBy?: Prisma.ResistanceOrderByWithRelationInput | Prisma.ResistanceOrderByWithRelationInput[]
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-   * 
+   *
    * Sets the start position
    */
   cursor?: Prisma.ResistanceWhereUniqueInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Take `±n` Resistances from the position of the cursor.
    */
   take?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Skip the first `n` Resistances.
    */
   skip?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
+   *
    * Count returned Resistances
   **/
   _count?: true | ResistanceCountAggregateInputType
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
+   *
+   * Select which fields to average
+  **/
+  _avg?: ResistanceAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   *
+   * Select which fields to sum
+  **/
+  _sum?: ResistanceSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   *
    * Select which fields to find the minimum value
   **/
   _min?: ResistanceMinAggregateInputType
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
+   *
    * Select which fields to find the maximum value
   **/
   _max?: ResistanceMaxAggregateInputType
@@ -143,6 +191,8 @@ export type ResistanceGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   _count?: ResistanceCountAggregateInputType | true
+  _avg?: ResistanceAvgAggregateInputType
+  _sum?: ResistanceSumAggregateInputType
   _min?: ResistanceMinAggregateInputType
   _max?: ResistanceMaxAggregateInputType
 }
@@ -151,9 +201,14 @@ export type ResistanceGroupByOutputType = {
   id: string
   userId: string
   recordedAt: Date
+  occurredAt: Date | null
+  durationSecs: number | null
+  note: string | null
   pauseSessionId: string | null
   createdAt: Date
   _count: ResistanceCountAggregateOutputType | null
+  _avg: ResistanceAvgAggregateOutputType | null
+  _sum: ResistanceSumAggregateOutputType | null
   _min: ResistanceMinAggregateOutputType | null
   _max: ResistanceMaxAggregateOutputType | null
 }
@@ -180,6 +235,9 @@ export type ResistanceWhereInput = {
   id?: Prisma.StringFilter<"Resistance"> | string
   userId?: Prisma.StringFilter<"Resistance"> | string
   recordedAt?: Prisma.DateTimeFilter<"Resistance"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableFilter<"Resistance"> | Date | string | null
+  durationSecs?: Prisma.IntNullableFilter<"Resistance"> | number | null
+  note?: Prisma.StringNullableFilter<"Resistance"> | string | null
   pauseSessionId?: Prisma.StringNullableFilter<"Resistance"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Resistance"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -190,6 +248,9 @@ export type ResistanceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  durationSecs?: Prisma.SortOrderInput | Prisma.SortOrder
+  note?: Prisma.SortOrderInput | Prisma.SortOrder
   pauseSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -204,6 +265,9 @@ export type ResistanceWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ResistanceWhereInput | Prisma.ResistanceWhereInput[]
   userId?: Prisma.StringFilter<"Resistance"> | string
   recordedAt?: Prisma.DateTimeFilter<"Resistance"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableFilter<"Resistance"> | Date | string | null
+  durationSecs?: Prisma.IntNullableFilter<"Resistance"> | number | null
+  note?: Prisma.StringNullableFilter<"Resistance"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Resistance"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   pauseSession?: Prisma.XOR<Prisma.PauseSessionNullableScalarRelationFilter, Prisma.PauseSessionWhereInput> | null
@@ -213,11 +277,16 @@ export type ResistanceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  durationSecs?: Prisma.SortOrderInput | Prisma.SortOrder
+  note?: Prisma.SortOrderInput | Prisma.SortOrder
   pauseSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ResistanceCountOrderByAggregateInput
+  _avg?: Prisma.ResistanceAvgOrderByAggregateInput
   _max?: Prisma.ResistanceMaxOrderByAggregateInput
   _min?: Prisma.ResistanceMinOrderByAggregateInput
+  _sum?: Prisma.ResistanceSumOrderByAggregateInput
 }
 
 export type ResistanceScalarWhereWithAggregatesInput = {
@@ -227,6 +296,9 @@ export type ResistanceScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Resistance"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Resistance"> | string
   recordedAt?: Prisma.DateTimeWithAggregatesFilter<"Resistance"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Resistance"> | Date | string | null
+  durationSecs?: Prisma.IntNullableWithAggregatesFilter<"Resistance"> | number | null
+  note?: Prisma.StringNullableWithAggregatesFilter<"Resistance"> | string | null
   pauseSessionId?: Prisma.StringNullableWithAggregatesFilter<"Resistance"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Resistance"> | Date | string
 }
@@ -234,6 +306,9 @@ export type ResistanceScalarWhereWithAggregatesInput = {
 export type ResistanceCreateInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutResistancesInput
   pauseSession?: Prisma.PauseSessionCreateNestedOneWithoutResistanceInput
@@ -243,6 +318,9 @@ export type ResistanceUncheckedCreateInput = {
   id?: string
   userId: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   pauseSessionId?: string | null
   createdAt?: Date | string
 }
@@ -250,6 +328,9 @@ export type ResistanceUncheckedCreateInput = {
 export type ResistanceUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutResistancesNestedInput
   pauseSession?: Prisma.PauseSessionUpdateOneWithoutResistanceNestedInput
@@ -259,6 +340,9 @@ export type ResistanceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pauseSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -267,6 +351,9 @@ export type ResistanceCreateManyInput = {
   id?: string
   userId: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   pauseSessionId?: string | null
   createdAt?: Date | string
 }
@@ -274,6 +361,9 @@ export type ResistanceCreateManyInput = {
 export type ResistanceUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -281,6 +371,9 @@ export type ResistanceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pauseSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -304,14 +397,24 @@ export type ResistanceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrder
+  durationSecs?: Prisma.SortOrder
+  note?: Prisma.SortOrder
   pauseSessionId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type ResistanceAvgOrderByAggregateInput = {
+  durationSecs?: Prisma.SortOrder
 }
 
 export type ResistanceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrder
+  durationSecs?: Prisma.SortOrder
+  note?: Prisma.SortOrder
   pauseSessionId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -320,8 +423,15 @@ export type ResistanceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
+  occurredAt?: Prisma.SortOrder
+  durationSecs?: Prisma.SortOrder
+  note?: Prisma.SortOrder
   pauseSessionId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type ResistanceSumOrderByAggregateInput = {
+  durationSecs?: Prisma.SortOrder
 }
 
 export type ResistanceCreateNestedManyWithoutUserInput = {
@@ -401,6 +511,9 @@ export type ResistanceUncheckedUpdateOneWithoutPauseSessionNestedInput = {
 export type ResistanceCreateWithoutUserInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   createdAt?: Date | string
   pauseSession?: Prisma.PauseSessionCreateNestedOneWithoutResistanceInput
 }
@@ -408,6 +521,9 @@ export type ResistanceCreateWithoutUserInput = {
 export type ResistanceUncheckedCreateWithoutUserInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   pauseSessionId?: string | null
   createdAt?: Date | string
 }
@@ -445,6 +561,9 @@ export type ResistanceScalarWhereInput = {
   id?: Prisma.StringFilter<"Resistance"> | string
   userId?: Prisma.StringFilter<"Resistance"> | string
   recordedAt?: Prisma.DateTimeFilter<"Resistance"> | Date | string
+  occurredAt?: Prisma.DateTimeNullableFilter<"Resistance"> | Date | string | null
+  durationSecs?: Prisma.IntNullableFilter<"Resistance"> | number | null
+  note?: Prisma.StringNullableFilter<"Resistance"> | string | null
   pauseSessionId?: Prisma.StringNullableFilter<"Resistance"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Resistance"> | Date | string
 }
@@ -452,6 +571,9 @@ export type ResistanceScalarWhereInput = {
 export type ResistanceCreateWithoutPauseSessionInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutResistancesInput
 }
@@ -460,6 +582,9 @@ export type ResistanceUncheckedCreateWithoutPauseSessionInput = {
   id?: string
   userId: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   createdAt?: Date | string
 }
 
@@ -482,6 +607,9 @@ export type ResistanceUpdateToOneWithWhereWithoutPauseSessionInput = {
 export type ResistanceUpdateWithoutPauseSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutResistancesNestedInput
 }
@@ -490,12 +618,18 @@ export type ResistanceUncheckedUpdateWithoutPauseSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ResistanceCreateManyUserInput = {
   id?: string
   recordedAt?: Date | string
+  occurredAt?: Date | string | null
+  durationSecs?: number | null
+  note?: string | null
   pauseSessionId?: string | null
   createdAt?: Date | string
 }
@@ -503,6 +637,9 @@ export type ResistanceCreateManyUserInput = {
 export type ResistanceUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pauseSession?: Prisma.PauseSessionUpdateOneWithoutResistanceNestedInput
 }
@@ -510,6 +647,9 @@ export type ResistanceUpdateWithoutUserInput = {
 export type ResistanceUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pauseSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -517,6 +657,9 @@ export type ResistanceUncheckedUpdateWithoutUserInput = {
 export type ResistanceUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  durationSecs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pauseSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -527,6 +670,9 @@ export type ResistanceSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
+  durationSecs?: boolean
+  note?: boolean
   pauseSessionId?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -537,6 +683,9 @@ export type ResistanceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
+  durationSecs?: boolean
+  note?: boolean
   pauseSessionId?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -547,6 +696,9 @@ export type ResistanceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
+  durationSecs?: boolean
+  note?: boolean
   pauseSessionId?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -557,11 +709,14 @@ export type ResistanceSelectScalar = {
   id?: boolean
   userId?: boolean
   recordedAt?: boolean
+  occurredAt?: boolean
+  durationSecs?: boolean
+  note?: boolean
   pauseSessionId?: boolean
   createdAt?: boolean
 }
 
-export type ResistanceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "recordedAt" | "pauseSessionId" | "createdAt", ExtArgs["result"]["resistance"]>
+export type ResistanceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "recordedAt" | "occurredAt" | "durationSecs" | "note" | "pauseSessionId" | "createdAt", ExtArgs["result"]["resistance"]>
 export type ResistanceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   pauseSession?: boolean | Prisma.Resistance$pauseSessionArgs<ExtArgs>
@@ -585,6 +740,9 @@ export type $ResistancePayload<ExtArgs extends runtime.Types.Extensions.Internal
     id: string
     userId: string
     recordedAt: Date
+    occurredAt: Date | null
+    durationSecs: number | null
+    note: string | null
     pauseSessionId: string | null
     createdAt: Date
   }, ExtArgs["result"]["resistance"]>
@@ -666,13 +824,13 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    * @example
    * // Get all Resistances
    * const resistances = await prisma.resistance.findMany()
-   * 
+   *
    * // Get first 10 Resistances
    * const resistances = await prisma.resistance.findMany({ take: 10 })
-   * 
+   *
    * // Only select the `id`
    * const resistanceWithIdOnly = await prisma.resistance.findMany({ select: { id: true } })
-   * 
+   *
    */
   findMany<T extends ResistanceFindManyArgs>(args?: Prisma.SelectSubset<T, ResistanceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ResistancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
 
@@ -686,7 +844,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... data to create a Resistance
    *   }
    * })
-   * 
+   *
    */
   create<T extends ResistanceCreateArgs>(args: Prisma.SelectSubset<T, ResistanceCreateArgs<ExtArgs>>): Prisma.Prisma__ResistanceClient<runtime.Types.Result.GetResult<Prisma.$ResistancePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
@@ -700,7 +858,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... provide data here
    *   ]
    * })
-   *     
+   *
    */
   createMany<T extends ResistanceCreateManyArgs>(args?: Prisma.SelectSubset<T, ResistanceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
 
@@ -714,7 +872,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... provide data here
    *   ]
    * })
-   * 
+   *
    * // Create many Resistances and only return the `id`
    * const resistanceWithIdOnly = await prisma.resistance.createManyAndReturn({
    *   select: { id: true },
@@ -724,7 +882,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    * })
    * Note, that providing `undefined` is treated as the value not being there.
    * Read more here: https://pris.ly/d/null-undefined
-   * 
+   *
    */
   createManyAndReturn<T extends ResistanceCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, ResistanceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ResistancePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
 
@@ -738,7 +896,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... filter to delete one Resistance
    *   }
    * })
-   * 
+   *
    */
   delete<T extends ResistanceDeleteArgs>(args: Prisma.SelectSubset<T, ResistanceDeleteArgs<ExtArgs>>): Prisma.Prisma__ResistanceClient<runtime.Types.Result.GetResult<Prisma.$ResistancePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
@@ -755,7 +913,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... provide data here
    *   }
    * })
-   * 
+   *
    */
   update<T extends ResistanceUpdateArgs>(args: Prisma.SelectSubset<T, ResistanceUpdateArgs<ExtArgs>>): Prisma.Prisma__ResistanceClient<runtime.Types.Result.GetResult<Prisma.$ResistancePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
@@ -769,7 +927,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... provide filter here
    *   }
    * })
-   * 
+   *
    */
   deleteMany<T extends ResistanceDeleteManyArgs>(args?: Prisma.SelectSubset<T, ResistanceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
 
@@ -788,7 +946,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... provide data here
    *   }
    * })
-   * 
+   *
    */
   updateMany<T extends ResistanceUpdateManyArgs>(args: Prisma.SelectSubset<T, ResistanceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>
 
@@ -805,7 +963,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     // ... provide data here
    *   ]
    * })
-   * 
+   *
    * // Update zero or more Resistances and only return the `id`
    * const resistanceWithIdOnly = await prisma.resistance.updateManyAndReturn({
    *   select: { id: true },
@@ -818,7 +976,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    * })
    * Note, that providing `undefined` is treated as the value not being there.
    * Read more here: https://pris.ly/d/null-undefined
-   * 
+   *
    */
   updateManyAndReturn<T extends ResistanceUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, ResistanceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ResistancePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
@@ -907,7 +1065,7 @@ export interface ResistanceDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *     _all: true
    *   },
    * })
-   * 
+   *
   **/
   groupBy<
     T extends ResistanceGroupByArgs,
@@ -1015,6 +1173,9 @@ export interface ResistanceFieldRefs {
   readonly id: Prisma.FieldRef<"Resistance", 'String'>
   readonly userId: Prisma.FieldRef<"Resistance", 'String'>
   readonly recordedAt: Prisma.FieldRef<"Resistance", 'DateTime'>
+  readonly occurredAt: Prisma.FieldRef<"Resistance", 'DateTime'>
+  readonly durationSecs: Prisma.FieldRef<"Resistance", 'Int'>
+  readonly note: Prisma.FieldRef<"Resistance", 'String'>
   readonly pauseSessionId: Prisma.FieldRef<"Resistance", 'String'>
   readonly createdAt: Prisma.FieldRef<"Resistance", 'DateTime'>
 }
@@ -1087,31 +1248,31 @@ export type ResistanceFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Int
   where?: Prisma.ResistanceWhereInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-   * 
+   *
    * Determine the order of Resistances to fetch.
    */
   orderBy?: Prisma.ResistanceOrderByWithRelationInput | Prisma.ResistanceOrderByWithRelationInput[]
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-   * 
+   *
    * Sets the position for searching for Resistances.
    */
   cursor?: Prisma.ResistanceWhereUniqueInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Take `±n` Resistances from the position of the cursor.
    */
   take?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Skip the first `n` Resistances.
    */
   skip?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
+   *
    * Filter by unique combinations of Resistances.
    */
   distinct?: Prisma.ResistanceScalarFieldEnum | Prisma.ResistanceScalarFieldEnum[]
@@ -1139,31 +1300,31 @@ export type ResistanceFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensi
   where?: Prisma.ResistanceWhereInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-   * 
+   *
    * Determine the order of Resistances to fetch.
    */
   orderBy?: Prisma.ResistanceOrderByWithRelationInput | Prisma.ResistanceOrderByWithRelationInput[]
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-   * 
+   *
    * Sets the position for searching for Resistances.
    */
   cursor?: Prisma.ResistanceWhereUniqueInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Take `±n` Resistances from the position of the cursor.
    */
   take?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Skip the first `n` Resistances.
    */
   skip?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
+   *
    * Filter by unique combinations of Resistances.
    */
   distinct?: Prisma.ResistanceScalarFieldEnum | Prisma.ResistanceScalarFieldEnum[]
@@ -1191,31 +1352,31 @@ export type ResistanceFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
   where?: Prisma.ResistanceWhereInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-   * 
+   *
    * Determine the order of Resistances to fetch.
    */
   orderBy?: Prisma.ResistanceOrderByWithRelationInput | Prisma.ResistanceOrderByWithRelationInput[]
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-   * 
+   *
    * Sets the position for listing Resistances.
    */
   cursor?: Prisma.ResistanceWhereUniqueInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Take `±n` Resistances from the position of the cursor.
    */
   take?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-   * 
+   *
    * Skip the first `n` Resistances.
    */
   skip?: number
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
+   *
    * Filter by unique combinations of Resistances.
    */
   distinct?: Prisma.ResistanceScalarFieldEnum | Prisma.ResistanceScalarFieldEnum[]

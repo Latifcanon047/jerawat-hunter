@@ -42,6 +42,7 @@ export type PauseSessionMinAggregateOutputType = {
   endedAt: Date | null
   endedEarly: boolean | null
   outcome: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted: boolean | null
   createdAt: Date | null
 }
 
@@ -53,6 +54,7 @@ export type PauseSessionMaxAggregateOutputType = {
   endedAt: Date | null
   endedEarly: boolean | null
   outcome: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted: boolean | null
   createdAt: Date | null
 }
 
@@ -64,6 +66,7 @@ export type PauseSessionCountAggregateOutputType = {
   endedAt: number
   endedEarly: number
   outcome: number
+  pickingFollowUpCompleted: number
   createdAt: number
   _all: number
 }
@@ -85,6 +88,7 @@ export type PauseSessionMinAggregateInputType = {
   endedAt?: true
   endedEarly?: true
   outcome?: true
+  pickingFollowUpCompleted?: true
   createdAt?: true
 }
 
@@ -96,6 +100,7 @@ export type PauseSessionMaxAggregateInputType = {
   endedAt?: true
   endedEarly?: true
   outcome?: true
+  pickingFollowUpCompleted?: true
   createdAt?: true
 }
 
@@ -107,6 +112,7 @@ export type PauseSessionCountAggregateInputType = {
   endedAt?: true
   endedEarly?: true
   outcome?: true
+  pickingFollowUpCompleted?: true
   createdAt?: true
   _all?: true
 }
@@ -205,6 +211,7 @@ export type PauseSessionGroupByOutputType = {
   endedAt: Date | null
   endedEarly: boolean
   outcome: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted: boolean
   createdAt: Date
   _count: PauseSessionCountAggregateOutputType | null
   _avg: PauseSessionAvgAggregateOutputType | null
@@ -239,6 +246,7 @@ export type PauseSessionWhereInput = {
   endedAt?: Prisma.DateTimeNullableFilter<"PauseSession"> | Date | string | null
   endedEarly?: Prisma.BoolFilter<"PauseSession"> | boolean
   outcome?: Prisma.EnumPauseOutcomeNullableFilter<"PauseSession"> | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFilter<"PauseSession"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PauseSession"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   pickingEvent?: Prisma.XOR<Prisma.PickingEventNullableScalarRelationFilter, Prisma.PickingEventWhereInput> | null
@@ -253,6 +261,7 @@ export type PauseSessionOrderByWithRelationInput = {
   endedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   endedEarly?: Prisma.SortOrder
   outcome?: Prisma.SortOrderInput | Prisma.SortOrder
+  pickingFollowUpCompleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   pickingEvent?: Prisma.PickingEventOrderByWithRelationInput
@@ -270,6 +279,7 @@ export type PauseSessionWhereUniqueInput = Prisma.AtLeast<{
   endedAt?: Prisma.DateTimeNullableFilter<"PauseSession"> | Date | string | null
   endedEarly?: Prisma.BoolFilter<"PauseSession"> | boolean
   outcome?: Prisma.EnumPauseOutcomeNullableFilter<"PauseSession"> | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFilter<"PauseSession"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PauseSession"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   pickingEvent?: Prisma.XOR<Prisma.PickingEventNullableScalarRelationFilter, Prisma.PickingEventWhereInput> | null
@@ -284,6 +294,7 @@ export type PauseSessionOrderByWithAggregationInput = {
   endedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   endedEarly?: Prisma.SortOrder
   outcome?: Prisma.SortOrderInput | Prisma.SortOrder
+  pickingFollowUpCompleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.PauseSessionCountOrderByAggregateInput
   _avg?: Prisma.PauseSessionAvgOrderByAggregateInput
@@ -303,6 +314,7 @@ export type PauseSessionScalarWhereWithAggregatesInput = {
   endedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PauseSession"> | Date | string | null
   endedEarly?: Prisma.BoolWithAggregatesFilter<"PauseSession"> | boolean
   outcome?: Prisma.EnumPauseOutcomeNullableWithAggregatesFilter<"PauseSession"> | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolWithAggregatesFilter<"PauseSession"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PauseSession"> | Date | string
 }
 
@@ -313,6 +325,7 @@ export type PauseSessionCreateInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPauseSessionsInput
   pickingEvent?: Prisma.PickingEventCreateNestedOneWithoutPauseSessionInput
@@ -327,6 +340,7 @@ export type PauseSessionUncheckedCreateInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   pickingEvent?: Prisma.PickingEventUncheckedCreateNestedOneWithoutPauseSessionInput
   resistance?: Prisma.ResistanceUncheckedCreateNestedOneWithoutPauseSessionInput
@@ -339,6 +353,7 @@ export type PauseSessionUpdateInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPauseSessionsNestedInput
   pickingEvent?: Prisma.PickingEventUpdateOneWithoutPauseSessionNestedInput
@@ -353,6 +368,7 @@ export type PauseSessionUncheckedUpdateInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pickingEvent?: Prisma.PickingEventUncheckedUpdateOneWithoutPauseSessionNestedInput
   resistance?: Prisma.ResistanceUncheckedUpdateOneWithoutPauseSessionNestedInput
@@ -366,6 +382,7 @@ export type PauseSessionCreateManyInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
 }
 
@@ -376,6 +393,7 @@ export type PauseSessionUpdateManyMutationInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -387,6 +405,7 @@ export type PauseSessionUncheckedUpdateManyInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -408,6 +427,7 @@ export type PauseSessionCountOrderByAggregateInput = {
   endedAt?: Prisma.SortOrder
   endedEarly?: Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  pickingFollowUpCompleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -423,6 +443,7 @@ export type PauseSessionMaxOrderByAggregateInput = {
   endedAt?: Prisma.SortOrder
   endedEarly?: Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  pickingFollowUpCompleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -434,6 +455,7 @@ export type PauseSessionMinOrderByAggregateInput = {
   endedAt?: Prisma.SortOrder
   endedEarly?: Prisma.SortOrder
   outcome?: Prisma.SortOrder
+  pickingFollowUpCompleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -543,6 +565,7 @@ export type PauseSessionCreateWithoutUserInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   pickingEvent?: Prisma.PickingEventCreateNestedOneWithoutPauseSessionInput
   resistance?: Prisma.ResistanceCreateNestedOneWithoutPauseSessionInput
@@ -555,6 +578,7 @@ export type PauseSessionUncheckedCreateWithoutUserInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   pickingEvent?: Prisma.PickingEventUncheckedCreateNestedOneWithoutPauseSessionInput
   resistance?: Prisma.ResistanceUncheckedCreateNestedOneWithoutPauseSessionInput
@@ -597,6 +621,7 @@ export type PauseSessionScalarWhereInput = {
   endedAt?: Prisma.DateTimeNullableFilter<"PauseSession"> | Date | string | null
   endedEarly?: Prisma.BoolFilter<"PauseSession"> | boolean
   outcome?: Prisma.EnumPauseOutcomeNullableFilter<"PauseSession"> | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFilter<"PauseSession"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PauseSession"> | Date | string
 }
 
@@ -607,6 +632,7 @@ export type PauseSessionCreateWithoutPickingEventInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPauseSessionsInput
   resistance?: Prisma.ResistanceCreateNestedOneWithoutPauseSessionInput
@@ -620,6 +646,7 @@ export type PauseSessionUncheckedCreateWithoutPickingEventInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   resistance?: Prisma.ResistanceUncheckedCreateNestedOneWithoutPauseSessionInput
 }
@@ -647,6 +674,7 @@ export type PauseSessionUpdateWithoutPickingEventInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPauseSessionsNestedInput
   resistance?: Prisma.ResistanceUpdateOneWithoutPauseSessionNestedInput
@@ -660,6 +688,7 @@ export type PauseSessionUncheckedUpdateWithoutPickingEventInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   resistance?: Prisma.ResistanceUncheckedUpdateOneWithoutPauseSessionNestedInput
 }
@@ -671,6 +700,7 @@ export type PauseSessionCreateWithoutResistanceInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPauseSessionsInput
   pickingEvent?: Prisma.PickingEventCreateNestedOneWithoutPauseSessionInput
@@ -684,6 +714,7 @@ export type PauseSessionUncheckedCreateWithoutResistanceInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
   pickingEvent?: Prisma.PickingEventUncheckedCreateNestedOneWithoutPauseSessionInput
 }
@@ -711,6 +742,7 @@ export type PauseSessionUpdateWithoutResistanceInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPauseSessionsNestedInput
   pickingEvent?: Prisma.PickingEventUpdateOneWithoutPauseSessionNestedInput
@@ -724,6 +756,7 @@ export type PauseSessionUncheckedUpdateWithoutResistanceInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pickingEvent?: Prisma.PickingEventUncheckedUpdateOneWithoutPauseSessionNestedInput
 }
@@ -735,6 +768,7 @@ export type PauseSessionCreateManyUserInput = {
   endedAt?: Date | string | null
   endedEarly?: boolean
   outcome?: $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: boolean
   createdAt?: Date | string
 }
 
@@ -745,6 +779,7 @@ export type PauseSessionUpdateWithoutUserInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pickingEvent?: Prisma.PickingEventUpdateOneWithoutPauseSessionNestedInput
   resistance?: Prisma.ResistanceUpdateOneWithoutPauseSessionNestedInput
@@ -757,6 +792,7 @@ export type PauseSessionUncheckedUpdateWithoutUserInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pickingEvent?: Prisma.PickingEventUncheckedUpdateOneWithoutPauseSessionNestedInput
   resistance?: Prisma.ResistanceUncheckedUpdateOneWithoutPauseSessionNestedInput
@@ -769,6 +805,7 @@ export type PauseSessionUncheckedUpdateManyWithoutUserInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endedEarly?: Prisma.BoolFieldUpdateOperationsInput | boolean
   outcome?: Prisma.NullableEnumPauseOutcomeFieldUpdateOperationsInput | $Enums.PauseOutcome | null
+  pickingFollowUpCompleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -782,6 +819,7 @@ export type PauseSessionSelect<ExtArgs extends runtime.Types.Extensions.Internal
   endedAt?: boolean
   endedEarly?: boolean
   outcome?: boolean
+  pickingFollowUpCompleted?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   pickingEvent?: boolean | Prisma.PauseSession$pickingEventArgs<ExtArgs>
@@ -796,6 +834,7 @@ export type PauseSessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   endedAt?: boolean
   endedEarly?: boolean
   outcome?: boolean
+  pickingFollowUpCompleted?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["pauseSession"]>
@@ -808,6 +847,7 @@ export type PauseSessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   endedAt?: boolean
   endedEarly?: boolean
   outcome?: boolean
+  pickingFollowUpCompleted?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["pauseSession"]>
@@ -820,10 +860,11 @@ export type PauseSessionSelectScalar = {
   endedAt?: boolean
   endedEarly?: boolean
   outcome?: boolean
+  pickingFollowUpCompleted?: boolean
   createdAt?: boolean
 }
 
-export type PauseSessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "durationSecs" | "startedAt" | "endedAt" | "endedEarly" | "outcome" | "createdAt", ExtArgs["result"]["pauseSession"]>
+export type PauseSessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "durationSecs" | "startedAt" | "endedAt" | "endedEarly" | "outcome" | "pickingFollowUpCompleted" | "createdAt", ExtArgs["result"]["pauseSession"]>
 export type PauseSessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   pickingEvent?: boolean | Prisma.PauseSession$pickingEventArgs<ExtArgs>
@@ -851,6 +892,7 @@ export type $PauseSessionPayload<ExtArgs extends runtime.Types.Extensions.Intern
     endedAt: Date | null
     endedEarly: boolean
     outcome: $Enums.PauseOutcome | null
+    pickingFollowUpCompleted: boolean
     createdAt: Date
   }, ExtArgs["result"]["pauseSession"]>
   composites: {}
@@ -1285,6 +1327,7 @@ export interface PauseSessionFieldRefs {
   readonly endedAt: Prisma.FieldRef<"PauseSession", 'DateTime'>
   readonly endedEarly: Prisma.FieldRef<"PauseSession", 'Boolean'>
   readonly outcome: Prisma.FieldRef<"PauseSession", 'PauseOutcome'>
+  readonly pickingFollowUpCompleted: Prisma.FieldRef<"PauseSession", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"PauseSession", 'DateTime'>
 }
     
