@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ResistanceForm } from "@/components/resistance/resistance-form";
+import { useToast } from "@/lib/toast-context";
 
-export function StandaloneResistanceButton() {
+export function StandaloneResistanceButton({
+  onSaved,
+}: {
+  onSaved: () => void;
+}) {
+  const router = useRouter();
+  const { showToast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
 
   return (
@@ -20,6 +28,12 @@ export function StandaloneResistanceButton() {
         <ResistanceForm
           mode="standalone"
           onCancel={() => setFormOpen(false)}
+          onSaved={() => {
+            setFormOpen(false);
+            showToast("success", "Catatan keberhasilan berhasil disimpan.");
+            onSaved();
+            router.refresh();
+          }}
         />
       )}
     </div>

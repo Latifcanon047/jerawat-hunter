@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
+import { Modal } from "@/components/ui/modal";
 import {
   createStandaloneResistance,
   updateResistance,
@@ -16,12 +17,16 @@ import {
   parseJakartaDateTimeInput,
   toJakartaDateTimeInput,
 } from "@/lib/resistance-form-values";
+import { createFormSnapshot } from "@/lib/form-snapshot";
+import { notifyDashboardStatsRefresh } from "@/lib/dashboard-stats-refresh";
 import { MAX_RESISTANCE_DURATION_SECS } from "@/lib/validations/resistance";
+import { useToast } from "@/lib/toast-context";
 
 type ResistanceFormProps =
   | {
       mode: "standalone";
       onCancel: () => void;
+      onSaved: () => void;
     }
   | {
       mode: "pause";
@@ -37,6 +42,7 @@ type ResistanceFormProps =
     };
 
 export function ResistanceForm(props: ResistanceFormProps) {
+  const { showToast } = useToast();
   const [initialValues] = useState(() =>
     props.mode === "pause"
       ? getPauseResistanceDefaults(props.session.startedAt, props.session.endedAt)
@@ -54,13 +60,30 @@ export function ResistanceForm(props: ResistanceFormProps) {
   );
   const [occurredAt, setOccurredAt] = useState(initialValues.occurredAt);
   const [durationSecs, setDurationSecs] = useState(initialValues.durationSecs);
-  const [note, setNote] = useState(
-    props.mode === "edit" ? (props.record.note ?? "") : ""
-  );
+  const initialNote =
+    props.mode === "edit" ? (props.record.note ?? "") : "";
+  const [note, setNote] = useState(initialNote);
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const isEditing = props.mode === "edit";
+  const isStandalone = props.mode === "standalone";
+  const formId = useId();
+  const initialFormSnapshotRef = useRef(
+    createFormSnapshot(
+      [
+        ["durationSecs", initialValues.durationSecs],
+        ["note", initialNote],
+      ],
+      initialValues.occurredAt,
+    ),
+  );
+  const [editModalOpen, setEditModalOpen] = useState(isEditing);
+  const [standaloneModalOpen, setStandaloneModalOpen] = useState(isStandalone);
+  const [discardConfirmationOpen, setDiscardConfirmationOpen] =
+    useState(false);
+  const discardConfirmedRef = useRef(false);
+  const savedNotifiedRef = useRef(false);
   const pendingRef = useRef(false);
   const lockRef = useRef<SubmissionLock | null>(null);
   if (lockRef.current === null) {
@@ -93,9 +116,13 @@ export function ResistanceForm(props: ResistanceFormProps) {
         const result = await createStandaloneResistance(input);
         if (!result.success) {
           setError(result.error);
+          showToast("error", result.error);
           return;
         }
         setSaved(true);
+        setStandaloneModalOpen(false);
+        savedNotifiedRef.current = true;
+        notifyDashboardStatsRefresh(result, props.onSaved);
       } else if (props.mode === "pause") {
         const result = await savePauseOutcome({
           sessionId: props.session.id,
@@ -121,17 +148,19 @@ export function ResistanceForm(props: ResistanceFormProps) {
         });
         if (!result.success) {
           setError(result.error);
+          showToast("error", result.error);
           return;
         }
         setSaved(true);
+        setEditModalOpen(false);
         props.onUpdated(result.data.record);
       }
     } catch {
-      setError(
-        isEditing
-          ? "Perubahan belum dapat disimpan. Silakan coba lagi."
-          : "Keberhasilan belum dapat disimpan. Silakan coba lagi."
-      );
+      const message = isEditing
+        ? "Perubahan belum dapat disimpan. Silakan coba lagi."
+        : "Keberhasilan belum dapat disimpan. Silakan coba lagi.";
+      setError(message);
+      if (isEditing || isStandalone) showToast("error", message);
     } finally {
       pendingRef.current = false;
       lockRef.current!.release();
@@ -139,25 +168,68 @@ export function ResistanceForm(props: ResistanceFormProps) {
     }
   }
 
-  return (
+  function requestEditClose() {
+    if (pendingRef.current || !isEditing) return;
+
+    const currentSnapshot = createFormSnapshot(
+      [
+        ["durationSecs", durationSecs],
+        ["note", note],
+      ],
+      occurredAt,
+    );
+    if (currentSnapshot !== initialFormSnapshotRef.current) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+    setEditModalOpen(false);
+  }
+
+  function requestStandaloneClose() {
+    if (pendingRef.current || saved || !isStandalone) return;
+
+    const currentSnapshot = createFormSnapshot(
+      [
+        ["durationSecs", durationSecs],
+        ["note", note],
+      ],
+      occurredAt,
+    );
+    if (currentSnapshot !== initialFormSnapshotRef.current) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+    setStandaloneModalOpen(false);
+  }
+
+  const form = (
     <form
+      id={isEditing || isStandalone ? formId : undefined}
       onSubmit={submit}
-      className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
-      aria-labelledby="resistance-form-title"
+      className={
+        isEditing || isStandalone
+          ? "space-y-5"
+          : "space-y-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
+      }
+      aria-labelledby={isEditing || isStandalone ? undefined : "resistance-form-title"}
     >
-      <div>
-        <p className="text-sm font-semibold text-teal-800">
-          CATATAN KEBERHASILAN
-        </p>
-        <h2 id="resistance-form-title" className="mt-2 text-xl font-semibold">
-          {isEditing ? "Edit catatan keberhasilan" : "Catat keberhasilanmu"}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-neutral-600">
-          {isEditing && !props.record.occurredAt
-            ? "Catatan lama belum memiliki waktu kejadian. Isi waktu sebenarnya untuk melengkapi atau memperbarui catatan."
-            : "Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."}
-        </p>
-      </div>
+      {!isStandalone && (
+        <div>
+          <p className="text-sm font-semibold text-teal-800">
+            CATATAN KEBERHASILAN
+          </p>
+          {!isEditing && (
+            <h2 id="resistance-form-title" className="mt-2 text-xl font-semibold">
+              Catat keberhasilanmu
+            </h2>
+          )}
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            {isEditing && !props.record.occurredAt
+              ? "Catatan lama belum memiliki waktu kejadian. Isi waktu sebenarnya untuk melengkapi atau memperbarui catatan."
+              : "Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."}
+          </p>
+        </div>
+      )}
 
       <label className="block space-y-2 text-sm font-medium">
         <span>Waktu kejadian</span>
@@ -224,29 +296,190 @@ export function ResistanceForm(props: ResistanceFormProps) {
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {!saved && (
+      {!isEditing && !isStandalone && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {!saved && (
+            <button
+              type="submit"
+              disabled={pending}
+              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending ? "Menyimpan..." : "Konfirmasi & simpan"}
+            </button>
+          )}
           <button
-            type="submit"
+            type="button"
+            onClick={props.onCancel}
             disabled={pending}
-            className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {pending
-              ? "Menyimpan..."
-              : isEditing
-                ? "Simpan perubahan"
-                : "Konfirmasi & simpan"}
+            {saved ? "Selesai" : "Batal"}
           </button>
-        )}
-        <button
-          type="button"
-          onClick={props.onCancel}
-          disabled={pending}
-          className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saved ? "Selesai" : "Batal"}
-        </button>
-      </div>
+        </div>
+      )}
     </form>
   );
+
+  if (isEditing) {
+    return (
+      <>
+        <Modal
+          isOpen={editModalOpen}
+          title="Edit catatan keberhasilan"
+          description={
+            !props.record.occurredAt
+              ? "Catatan lama belum memiliki waktu kejadian. Isi waktu sebenarnya untuk melengkapi atau memperbarui catatan."
+              : "Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."
+          }
+          closeDisabled={pending}
+          onRequestClose={requestEditClose}
+          onClosed={props.onCancel}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={requestEditClose}
+                disabled={pending}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form={formId}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+              >
+                {pending ? "Menyimpan..." : "Simpan perubahan"}
+              </button>
+            </div>
+          }
+        >
+          {form}
+        </Modal>
+        <Modal
+          isOpen={discardConfirmationOpen}
+          title="Buang perubahan?"
+          description="Perubahan yang belum disimpan akan hilang."
+          onRequestClose={() => setDiscardConfirmationOpen(false)}
+          onClosed={() => {
+            if (discardConfirmedRef.current) {
+              discardConfirmedRef.current = false;
+              setEditModalOpen(false);
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDiscardConfirmationOpen(false)}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Tetap mengedit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  discardConfirmedRef.current = true;
+                  setDiscardConfirmationOpen(false);
+                }}
+                className="min-h-12 rounded-xl bg-rose-700 px-5 font-semibold text-white hover:bg-rose-800"
+              >
+                Buang perubahan
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-700">
+            Apakah kamu yakin ingin menutup form edit ini?
+          </p>
+        </Modal>
+      </>
+    );
+  }
+
+  if (isStandalone) {
+    return (
+      <>
+        <Modal
+          isOpen={standaloneModalOpen}
+          title="Catat keberhasilan"
+          description="Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."
+          closeDisabled={pending || saved}
+          onRequestClose={requestStandaloneClose}
+          onClosed={() => {
+            if (saved) {
+              if (!savedNotifiedRef.current) {
+                savedNotifiedRef.current = true;
+                props.onSaved();
+              }
+            } else {
+              props.onCancel();
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={requestStandaloneClose}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form={formId}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+              >
+                {pending ? "Menyimpan..." : "Konfirmasi & simpan"}
+              </button>
+            </div>
+          }
+        >
+          {form}
+        </Modal>
+        <Modal
+          isOpen={discardConfirmationOpen}
+          title="Buang perubahan?"
+          description="Perubahan yang belum disimpan akan hilang."
+          onRequestClose={() => setDiscardConfirmationOpen(false)}
+          onClosed={() => {
+            if (discardConfirmedRef.current) {
+              discardConfirmedRef.current = false;
+              setStandaloneModalOpen(false);
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDiscardConfirmationOpen(false)}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Tetap mengisi
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  discardConfirmedRef.current = true;
+                  setDiscardConfirmationOpen(false);
+                }}
+                className="min-h-12 rounded-xl bg-rose-700 px-5 font-semibold text-white hover:bg-rose-800"
+              >
+                Buang perubahan
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-700">
+            Apakah kamu yakin ingin menutup form catatan ini?
+          </p>
+        </Modal>
+      </>
+    );
+  }
+
+  return form;
 }

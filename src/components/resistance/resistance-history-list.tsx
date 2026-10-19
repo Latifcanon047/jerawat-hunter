@@ -13,6 +13,7 @@ import {
   type ResistanceHistoryItem,
 } from "@/actions/resistance";
 import { ResistanceForm } from "@/components/resistance/resistance-form";
+import { useToast } from "@/lib/toast-context";
 import { hasVisibleResistanceNote } from "@/lib/resistance-history-utils";
 import {
   createLatestRequestGuard,
@@ -44,6 +45,7 @@ export function ResistanceHistoryList({
     null,
   );
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] =
@@ -165,7 +167,7 @@ export function ResistanceHistoryList({
 
   function updateRecord() {
     setEditingId(null);
-    showNotice("Perubahan catatan keberhasilan berhasil disimpan.");
+    showToast("success", "Perubahan catatan keberhasilan berhasil disimpan.");
     void loadRecords(page, activeFilter);
   }
 

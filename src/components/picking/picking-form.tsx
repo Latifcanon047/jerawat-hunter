@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { useRouter } from "next/navigation";
+import { Modal } from "@/components/ui/modal";
 import {
   createPickingEvent,
   updatePickingEvent,
@@ -12,7 +20,10 @@ import {
   parseJakartaDateTimeInput,
   toJakartaDateTimeInput,
 } from "@/lib/resistance-form-values";
+import { createFormSnapshot } from "@/lib/form-snapshot";
+import { notifyDashboardStatsRefresh } from "@/lib/dashboard-stats-refresh";
 import { pickingOptions } from "@/lib/picking-options";
+import { useToast } from "@/lib/toast-context";
 
 type PickingFormProps =
   | {
@@ -36,6 +47,7 @@ type PickingFormProps =
 
 export function PickingForm(props: PickingFormProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -51,7 +63,29 @@ export function PickingForm(props: PickingFormProps) {
   const isEditing = props.mode === "edit";
   const isManualCreate =
     props.mode === "create" && props.source === "manual";
+  const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const initialOccurredAtRef = useRef(occurredAt);
+  const initialFormSnapshotRef = useRef<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(isEditing);
+  const [manualModalOpen, setManualModalOpen] = useState(isManualCreate);
+  const [discardConfirmationOpen, setDiscardConfirmationOpen] =
+    useState(false);
+  const discardConfirmedRef = useRef(false);
   const eventData = isEditing ? props.event : null;
+
+  useLayoutEffect(() => {
+    if ((!isEditing && !isManualCreate) || !formRef.current) return;
+
+    const initialValues = Array.from(
+      new FormData(formRef.current).entries(),
+      ([name, value]) => [name, value.toString()] as const,
+    );
+    initialFormSnapshotRef.current = createFormSnapshot(
+      initialValues,
+      initialOccurredAtRef.current,
+    );
+  }, [isEditing, isManualCreate]);
 
   useEffect(() => {
     if (props.mode !== "create" || !saved || isManualCreate) return;
@@ -110,10 +144,13 @@ export function PickingForm(props: PickingFormProps) {
             setIdempotencyKey("");
           }
           setError(result.error);
+          if (isManualCreate) showToast("error", result.error);
           return;
         }
         if (isManualCreate) {
-          props.onSaved();
+          setSaved(true);
+          setManualModalOpen(false);
+          notifyDashboardStatsRefresh(result, props.onSaved);
         } else {
           setSaved(true);
         }
@@ -130,39 +167,96 @@ export function PickingForm(props: PickingFormProps) {
         });
         if (!result.success) {
           setError(result.error);
+          showToast("error", result.error);
           return;
         }
         setSaved(true);
+        setEditModalOpen(false);
         props.onUpdated(result.data.event);
       }
     } catch {
-      setError(
-        "Tidak dapat menghubungi server. Periksa koneksi lalu coba lagi."
-      );
+      const message =
+        "Tidak dapat menghubungi server. Periksa koneksi lalu coba lagi.";
+      setError(message);
+      if (props.mode === "edit" || isManualCreate) {
+        showToast("error", message);
+      }
     } finally {
       pendingRef.current = false;
       setPending(false);
     }
   }
 
-  return (
-    <form
-      onSubmit={submit}
-      className="space-y-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
-      aria-labelledby="picking-form-title"
-    >
-      <div>
-        <p className="text-sm font-semibold text-teal-800">CATATAN PICKING</p>
-        <h2 id="picking-form-title" className="mt-2 text-xl font-semibold">
-          {isEditing ? "Edit catatan picking" : "Apa yang terjadi?"}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-neutral-600">
-          {isEditing && !props.event.occurredAt
-            ? "Catatan lama belum memiliki waktu kejadian. Isi waktu sebenarnya untuk melengkapi atau memperbarui catatan."
-            : "Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."}
-        </p>
-      </div>
+  function requestEditClose() {
+    if (pendingRef.current || !isEditing) return;
 
+    const form = formRef.current;
+    const initialSnapshot = initialFormSnapshotRef.current;
+    if (!form || initialSnapshot === null) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+
+    const currentValues = Array.from(
+      new FormData(form).entries(),
+      ([name, value]) => [name, value.toString()] as const,
+    );
+    const currentSnapshot = createFormSnapshot(currentValues, occurredAt);
+    if (currentSnapshot !== initialSnapshot) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+    setEditModalOpen(false);
+  }
+
+  function requestManualClose() {
+    if (pendingRef.current || saved || !isManualCreate) return;
+
+    const form = formRef.current;
+    const initialSnapshot = initialFormSnapshotRef.current;
+    if (!form || initialSnapshot === null) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+
+    const currentValues = Array.from(
+      new FormData(form).entries(),
+      ([name, value]) => [name, value.toString()] as const,
+    );
+    if (
+      createFormSnapshot(currentValues, occurredAt) !== initialSnapshot
+    ) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+    setManualModalOpen(false);
+  }
+
+  function editFooter() {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={requestEditClose}
+          disabled={pending}
+          className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          form={formId}
+          disabled={pending || saved}
+          className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+        >
+          {pending ? "Menyimpan..." : "Simpan perubahan"}
+        </button>
+      </div>
+    );
+  }
+
+  const formFields = (
+    <>
       {(props.mode === "create" || isEditing) && (
         <label className="block space-y-2 text-sm font-semibold">
           <span>Waktu kejadian</span>
@@ -283,32 +377,220 @@ export function PickingForm(props: PickingFormProps) {
               : "Catatan berhasil disimpan! Kamu akan kembali ke dashboard."}
         </p>
       )}
+    </>
+  );
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="submit"
-          disabled={pending || (props.mode === "create" && saved)}
-          className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+  function createFormContent() {
+    return (
+      <>
+        <div>
+          <p className="text-sm font-semibold text-teal-800">
+            CATATAN PICKING
+          </p>
+          <h2 id="picking-form-title" className="mt-2 text-xl font-semibold">
+            Apa yang terjadi?
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh
+            dilewati.
+          </p>
+        </div>
+        {formFields}
+
+        {!isManualCreate && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="submit"
+              disabled={pending || saved}
+              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+            >
+              {pending
+                ? "Menyimpan..."
+                : saved
+                  ? "Simpan perubahan"
+                  : "Simpan catatan"}
+            </button>
+            <button
+              type="button"
+              onClick={props.onCancel}
+              disabled={pending}
+              className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+            >
+              Kembali
+            </button>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  const form = (
+    <form
+      ref={formRef}
+      id={isEditing || isManualCreate ? formId : undefined}
+      onSubmit={submit}
+      className={
+        isEditing || isManualCreate
+          ? "space-y-6"
+          : "space-y-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
+      }
+      aria-labelledby={isEditing || isManualCreate ? undefined : "picking-form-title"}
+    >
+      {isEditing || isManualCreate ? (
+        <fieldset
+          disabled={pending || saved}
+          className="min-w-0 space-y-6 border-0 p-0"
         >
-          {pending
-            ? "Menyimpan..."
-            : saved
-              ? "Simpan perubahan"
-              : isEditing
-                ? "Simpan perubahan"
-                : "Simpan catatan"}
-        </button>
-        <button
-          type="button"
-          onClick={props.onCancel}
-          disabled={pending}
-          className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
-        >
-          Kembali
-        </button>
-      </div>
+          {formFields}
+        </fieldset>
+      ) : (
+        createFormContent()
+      )}
     </form>
   );
+
+  if (isEditing) {
+    return (
+      <>
+        <Modal
+          isOpen={editModalOpen}
+          title="Edit catatan picking"
+          description={
+            !props.event.occurredAt
+              ? "Catatan lama belum memiliki waktu kejadian. Isi waktu sebenarnya untuk melengkapi atau memperbarui catatan."
+              : "Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."
+          }
+          closeDisabled={pending}
+          onRequestClose={requestEditClose}
+          onClosed={props.onCancel}
+          footer={editFooter()}
+        >
+          {form}
+        </Modal>
+        <Modal
+          isOpen={discardConfirmationOpen}
+          title="Buang perubahan?"
+          description="Perubahan yang belum disimpan akan hilang."
+          onRequestClose={() => {
+            setDiscardConfirmationOpen(false);
+          }}
+          onClosed={() => {
+            if (discardConfirmedRef.current) {
+              discardConfirmedRef.current = false;
+              setEditModalOpen(false);
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDiscardConfirmationOpen(false)}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Tetap mengedit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  discardConfirmedRef.current = true;
+                  setDiscardConfirmationOpen(false);
+                }}
+                className="min-h-12 rounded-xl bg-rose-700 px-5 font-semibold text-white hover:bg-rose-800"
+              >
+                Buang perubahan
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-700">
+            Apakah kamu yakin ingin menutup form edit ini?
+          </p>
+        </Modal>
+      </>
+    );
+  }
+
+  if (props.mode === "create" && props.source === "manual") {
+    return (
+      <>
+        <Modal
+          isOpen={manualModalOpen}
+          title="Catat kejadian picking"
+          description="Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."
+          closeDisabled={pending || saved}
+          onRequestClose={requestManualClose}
+          onClosed={() => {
+            if (saved) {
+              props.onSaved();
+            } else {
+              props.onCancel();
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={requestManualClose}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form={formId}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+              >
+                {pending ? "Menyimpan..." : "Simpan catatan"}
+              </button>
+            </div>
+          }
+        >
+          {form}
+        </Modal>
+        <Modal
+          isOpen={discardConfirmationOpen}
+          title="Buang perubahan?"
+          description="Perubahan yang belum disimpan akan hilang."
+          onRequestClose={() => setDiscardConfirmationOpen(false)}
+          onClosed={() => {
+            if (discardConfirmedRef.current) {
+              discardConfirmedRef.current = false;
+              setManualModalOpen(false);
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDiscardConfirmationOpen(false)}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Tetap mengisi
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  discardConfirmedRef.current = true;
+                  setDiscardConfirmationOpen(false);
+                }}
+                className="min-h-12 rounded-xl bg-rose-700 px-5 font-semibold text-white hover:bg-rose-800"
+              >
+                Buang perubahan
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-700">
+            Apakah kamu yakin ingin menutup form catatan ini?
+          </p>
+        </Modal>
+      </>
+    );
+  }
+
+  return form;
 }
 
 function ChoiceGroup({

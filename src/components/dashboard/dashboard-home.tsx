@@ -30,6 +30,7 @@ export function DashboardHome({
   const [error, setError] = useState(stateError ?? "");
   const [checking, setChecking] = useState(false);
   const [statusVerified, setStatusVerified] = useState(false);
+  const [statsRefreshSignal, setStatsRefreshSignal] = useState(0);
   const requestGuardRef = useRef<LatestRequestGuard | null>(null);
   if (requestGuardRef.current === null) {
     requestGuardRef.current = createLatestRequestGuard();
@@ -65,6 +66,10 @@ export function DashboardHome({
         setChecking(false);
       }
     }
+  }, []);
+
+  const notifyStatsCreated = useCallback(() => {
+    setStatsRefreshSignal((current) => current + 1);
   }, []);
 
   useEffect(() => {
@@ -113,8 +118,8 @@ export function DashboardHome({
         >
           Mulai atau lanjutkan Pause
         </Link>
-        <StandaloneResistanceButton />
-        <StandalonePickingButton />
+        <StandaloneResistanceButton onSaved={notifyStatsCreated} />
+        <StandalonePickingButton onStatsRefresh={notifyStatsCreated} />
         <Link
           href="/picking"
           className="flex min-h-12 w-full items-center justify-center rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
@@ -135,7 +140,7 @@ export function DashboardHome({
         </Link>
       </section>
 
-      <DashboardStats />
+      <DashboardStats refreshSignal={statsRefreshSignal} />
 
       {statusVerified && showReminder && pickingFollowUps[0] && (
         <div

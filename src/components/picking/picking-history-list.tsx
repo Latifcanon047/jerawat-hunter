@@ -13,6 +13,7 @@ import {
   type PickingEventData,
 } from "@/actions/picking";
 import { PickingForm } from "@/components/picking/picking-form";
+import { useToast } from "@/lib/toast-context";
 import { getPickingOptionLabel } from "@/lib/picking-options";
 import {
   createLatestRequestGuard,
@@ -44,6 +45,7 @@ export function PickingHistoryList({
     null,
   );
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PickingEventData | null>(
@@ -163,8 +165,7 @@ export function PickingHistoryList({
   };
 
   function updateEvent() {
-    setEditingId(null);
-    showNotice("Perubahan catatan berhasil disimpan.");
+    showToast("success", "Perubahan catatan berhasil disimpan.");
     void loadEvents(page, activeFilter);
   }
 

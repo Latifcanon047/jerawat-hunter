@@ -5,6 +5,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -26,6 +27,13 @@ import {
   getJakartaDateParts,
   type StatsFilterInput,
 } from "@/lib/validations/stats";
+import {
+  createAppliedStatsFilter,
+} from "@/lib/dashboard-stats-refresh";
+import {
+  createLatestRequestGuard,
+  type LatestRequestGuard,
+} from "@/lib/latest-request";
 
 interface TooltipPayloadItem {
   name: string;
@@ -73,7 +81,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 
 const emptySubscribe = () => () => {};
 
-export function DashboardStats() {
+export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -93,6 +101,27 @@ export function DashboardStats() {
   const [stats, setStats] = useState<StatsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const initialFilter = useMemo<StatsFilterInput>(
+    () => ({
+      mode: "monthly",
+      year: nowParts.year,
+      month: nowParts.month,
+      startDay: 1,
+      endDay: nowParts.day,
+    }),
+    [nowParts.day, nowParts.month, nowParts.year],
+  );
+  const appliedFilterRef = useRef<ReturnType<
+    typeof createAppliedStatsFilter
+  > | null>(null);
+  if (appliedFilterRef.current === null) {
+    appliedFilterRef.current = createAppliedStatsFilter(initialFilter);
+  }
+  const lastRefreshSignalRef = useRef(refreshSignal);
+  const requestGuardRef = useRef<LatestRequestGuard | null>(null);
+  if (requestGuardRef.current === null) {
+    requestGuardRef.current = createLatestRequestGuard();
+  }
 
   const yearId = useId();
   const monthId = useId();
@@ -177,10 +206,12 @@ export function DashboardStats() {
   // Execute fetch for given filter
   const loadStats = useCallback(
     async (filterToFetch: StatsFilterInput) => {
+      const requestId = requestGuardRef.current!.begin();
       setLoading(true);
       setError("");
       try {
         const result = await fetchDashboardStats(filterToFetch);
+        if (!requestGuardRef.current!.isCurrent(requestId)) return;
         if (!result.success) {
           setError(result.error);
         } else {
@@ -188,9 +219,13 @@ export function DashboardStats() {
           setError("");
         }
       } catch {
-        setError("Gagal memuat statistik. Silakan periksa koneksi dan coba lagi.");
+        if (requestGuardRef.current!.isCurrent(requestId)) {
+          setError("Gagal memuat statistik. Silakan periksa koneksi dan coba lagi.");
+        }
       } finally {
-        setLoading(false);
+        if (requestGuardRef.current!.isCurrent(requestId)) {
+          setLoading(false);
+        }
       }
     },
     []
@@ -198,17 +233,21 @@ export function DashboardStats() {
 
   // Initial load on mount
   useEffect(() => {
-    const initialFilter: StatsFilterInput = {
-      mode: "monthly",
-      year: nowParts.year,
-      month: nowParts.month,
-      startDay: 1,
-      endDay: nowParts.day,
-    };
+    let active = true;
     queueMicrotask(() => {
-      void loadStats(initialFilter);
+      if (active) void loadStats(initialFilter);
     });
-  }, [loadStats, nowParts.year, nowParts.month, nowParts.day]);
+    return () => {
+      active = false;
+      requestGuardRef.current?.invalidate();
+    };
+  }, [initialFilter, loadStats]);
+
+  useEffect(() => {
+    if (lastRefreshSignalRef.current === refreshSignal) return;
+    lastRefreshSignalRef.current = refreshSignal;
+    void loadStats(appliedFilterRef.current!.get());
+  }, [loadStats, refreshSignal]);
 
   // Form submit handler
   const handleApply = (e: React.FormEvent) => {
@@ -216,18 +255,22 @@ export function DashboardStats() {
     if (validationError) return;
 
     if (mode === "monthly") {
-      void loadStats({
+      const appliedFilter: StatsFilterInput = {
         mode: "monthly",
         year,
         month,
         startDay,
         endDay,
-      });
+      };
+      appliedFilterRef.current!.apply(appliedFilter);
+      void loadStats(appliedFilter);
     } else {
-      void loadStats({
+      const appliedFilter: StatsFilterInput = {
         mode: "yearly",
         year,
-      });
+      };
+      appliedFilterRef.current!.apply(appliedFilter);
+      void loadStats(appliedFilter);
     }
   };
 
