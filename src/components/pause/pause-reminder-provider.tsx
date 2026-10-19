@@ -30,6 +30,12 @@ import {
   type PauseReminderAudioId,
   type PauseReminderPreferences,
 } from "@/lib/pause-reminder-preferences";
+import {
+  detectPauseNotificationPlatform,
+  requestPauseNotificationPermission,
+  resolvePauseNotificationPermissionState,
+  type PauseNotificationPermissionState,
+} from "@/lib/pause-notification-permission";
 
 type AudioStatus =
   | "idle"
@@ -46,16 +52,11 @@ type NotificationStatus =
   | "shown"
   | "failed"
   | "already-processed";
-type NotificationPermissionState =
-  | NotificationPermission
-  | "unsupported"
-  | "error";
-
 interface PauseReminderContextValue {
   preferences: PauseReminderPreferences;
   preferencesReady: boolean;
   storageAvailable: boolean;
-  notificationPermission: NotificationPermissionState;
+  notificationPermission: PauseNotificationPermissionState;
   audioStatus: AudioStatus;
   notificationStatus: NotificationStatus;
   monitorError: string;
@@ -82,6 +83,67 @@ function isAuthPath(pathname: string): boolean {
   return AUTH_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
+}
+
+function readNotificationPermissionState(): PauseNotificationPermissionState {
+  const notificationApiAvailable = typeof Notification !== "undefined";
+  const serviceWorkerApiAvailable =
+    typeof navigator !== "undefined" && "serviceWorker" in navigator;
+  const platform =
+    typeof navigator === "undefined"
+      ? "other"
+      : detectPauseNotificationPlatform(
+          navigator.userAgent,
+          navigator.platform,
+          navigator.maxTouchPoints
+        );
+  let permission: NotificationPermission | undefined;
+
+  if (notificationApiAvailable) {
+    try {
+      permission = Notification.permission;
+    } catch {
+      return "error";
+    }
+  }
+
+  return resolvePauseNotificationPermissionState(
+    {
+      notificationApiAvailable,
+      serviceWorkerApiAvailable,
+      isIos: platform === "ios-safari" || platform === "ios-other",
+    },
+    permission
+  );
+}
+
+function updateNotificationStatusForPermission(
+  permission: PauseNotificationPermissionState,
+  setPermission: (permission: PauseNotificationPermissionState) => void,
+  setStatus: (status: NotificationStatus) => void
+): void {
+  setPermission(permission);
+  switch (permission) {
+    case "default":
+      setStatus("permission-required");
+      break;
+    case "denied":
+      setStatus("denied");
+      break;
+    case "granted":
+      setStatus("idle");
+      break;
+    case "notification-unsupported":
+    case "service-worker-unsupported":
+    case "ios-unsupported":
+      setStatus("unsupported");
+      break;
+    case "checking":
+      break;
+    case "error":
+      setStatus("failed");
+      break;
+  }
 }
 
 async function getNotificationClientId(
@@ -139,7 +201,7 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
   const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermissionState>("unsupported");
+    useState<PauseNotificationPermissionState>("checking");
   const [audioStatus, setAudioStatus] = useState<AudioStatus>("idle");
   const [notificationStatus, setNotificationStatus] =
     useState<NotificationStatus>("idle");
@@ -228,22 +290,42 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
     [stopAudioForDisable]
   );
 
+  const refreshNotificationPermission = useCallback(() => {
+    const permission = readNotificationPermissionState();
+    updateNotificationStatusForPermission(
+      permission,
+      setNotificationPermission,
+      setNotificationStatus
+    );
+    return permission;
+  }, []);
+
   const requestNotificationPermission = useCallback(async () => {
-    if (typeof Notification === "undefined") {
-      setNotificationPermission("unsupported");
-      setNotificationStatus("unsupported");
+    const currentPermission = readNotificationPermissionState();
+    setNotificationPermission(currentPermission);
+    if (currentPermission !== "default" || typeof Notification === "undefined") {
+      updateNotificationStatusForPermission(
+        currentPermission,
+        setNotificationPermission,
+        setNotificationStatus
+      );
       return;
     }
 
     try {
-      const permission = await Notification.requestPermission();
+      const permission = await requestPauseNotificationPermission(
+        currentPermission,
+        () => Notification.requestPermission()
+      );
       setNotificationPermission(permission);
       setNotificationStatus(
         permission === "granted"
           ? "idle"
           : permission === "denied"
             ? "denied"
-            : "permission-required"
+            : permission === "default"
+              ? "permission-required"
+              : "failed"
       );
     } catch {
       setNotificationPermission("error");
@@ -253,7 +335,7 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
 
   const showNotification = useCallback(async () => {
     if (typeof Notification === "undefined") {
-      setNotificationPermission("unsupported");
+      setNotificationPermission("notification-unsupported");
       setNotificationStatus("unsupported");
       return;
     }
@@ -261,6 +343,7 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
       typeof navigator === "undefined" ||
       !("serviceWorker" in navigator)
     ) {
+      setNotificationPermission("service-worker-unsupported");
       setNotificationStatus("unsupported");
       return;
     }
@@ -431,30 +514,29 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
       setStorageAvailable(stored.storageAvailable);
       setPreferencesReady(true);
 
-      if (typeof Notification === "undefined") {
-        setNotificationPermission("unsupported");
-        setNotificationStatus("unsupported");
-        return;
-      }
-      try {
-        const permission = Notification.permission;
-        setNotificationPermission(permission);
-        setNotificationStatus(
-          permission === "granted"
-            ? "idle"
-            : permission === "denied"
-              ? "denied"
-              : "permission-required"
-        );
-      } catch {
-        setNotificationPermission("error");
-        setNotificationStatus("failed");
-      }
+      refreshNotificationPermission();
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [refreshNotificationPermission]);
+
+  useEffect(() => {
+    const refreshWhenActive = () => {
+      if (document.visibilityState === "visible") {
+        refreshNotificationPermission();
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshWhenActive);
+    window.addEventListener("pageshow", refreshWhenActive);
+    window.addEventListener("focus", refreshWhenActive);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshWhenActive);
+      window.removeEventListener("pageshow", refreshWhenActive);
+      window.removeEventListener("focus", refreshWhenActive);
+    };
+  }, [refreshNotificationPermission]);
 
   useEffect(() => {
     const handleVisibility = () => {

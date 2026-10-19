@@ -34,7 +34,7 @@ Prioritas tampilan:
 2. Tombol aksi cepat untuk mencatat keberhasilan (*Standalone Resistance*) dan mencatat kejadian picking (*Standalone Picking*) secara mandiri.
 3. Tautan riwayat kejadian picking dan riwayat keberhasilan.
 4. Bagian Statistik: ringkasan kartu total dan grafik garis tren keberhasilan menahan dorongan serta kejadian picking.
-5. Ringkasan pola pemicu dan analisis perilaku (direncanakan).
+5. Tautan ke analisis pola picking tersedia pada Dashboard. Ringkasan pemicu teratas di Dashboard masih belum tersedia.
 
 *Catatan Navigasi:*
 - Kebutuhan produk awal menetapkan navigasi utama menggunakan *bottom navigation*.
@@ -60,6 +60,15 @@ Jika pengguna akhirnya melakukan picking, aplikasi menawarkan pengisian catatan 
 - Jika sesi berakhir dengan hasil picking tetapi pengguna belum melengkapi detailnya, Dashboard akan menampilkan dialog pengingat ramah (*"Catatan picking belum selesai"*) yang mengarahkan pengguna untuk melengkapi detail kejadian tersebut atau tetap membuka dashboard.
 - Ketika catatan kejadian picking tersimpan, `pickingFollowUpCompleted` ditandai selesai (`true`).
 - Jika suatu catatan `PickingEvent` yang terhubung ke Pause kemudian dihapus oleh pengguna, status `pickingFollowUpCompleted` pada sesi Pause terkait **tetap dipertahankan bernilai `true`** agar pengingat tidak muncul kembali secara mengganggu.
+
+**Pengingat saat deadline Pause:**
+- Deadline dihitung dari `startedAt + durationSecs`. Pengingat normal hanya diproses setelah status akhir sesi dikonfirmasi server, dengan `endedEarly = false` dan belum ada hasil (`outcome = null`). Sesi yang diakhiri lebih awal tidak memicu pengingat normal.
+- Monitor pengingat berada pada provider client di layout root agar tetap aktif selama navigasi antarhalaman aplikasi. Pemeriksaan deadline memakai timer client dan pemeriksaan ulang saat halaman kembali terlihat; server tetap menjadi sumber konfirmasi status sesi.
+- Audio aktif secara default dengan pilihan awal suara lembut. Pengguna dapat memilih satu dari tiga audio yang tersedia atau menonaktifkannya. Preferensi disimpan di `localStorage`, divalidasi saat dibaca, dan menggunakan nilai default jika data tidak tersedia atau tidak valid.
+- Pada satu sesi, aplikasi mencoba audio otomatis satu kali. Jika pemutaran otomatis gagal, pengguna dapat memulai pemutaran manual; audio yang sedang berjalan dapat dihentikan melalui tombol **Matikan Suara**. Percobaan audio dan notifikasi dilakukan secara independen.
+- Izin notifikasi diminta melalui tombol khusus di pengaturan Pengingat Pause. Dengan izin tersedia, aplikasi menyerahkan notifikasi sistem melalui service worker. Klik notifikasi memprioritaskan tab sumber yang masih tersedia, kemudian mencoba tab aplikasi se-origin lain, dan membuka `/pause` di tab baru hanya sebagai upaya terakhir. Jika ID tab sumber tidak dapat diperoleh, pemilihan tab memakai fallback deterministik yang sama. Klik notifikasi tidak memutar ulang audio.
+- Marker `localStorage` dan guard client mencegah pemrosesan berulang sebagai upaya terbaik, tetapi tidak memberikan eksklusivitas lintas-tab yang atomik. Marker disimpan sebelum percobaan pengiriman; jika marker berhasil disimpan tetapi audio/notifikasi gagal, pengingat otomatis tidak dicoba ulang pada pemuatan berikutnya. Audio yang gagal dapat dicoba manual pada halaman yang masih menampilkan status kegagalan.
+- Pengingat bergantung pada aplikasi yang masih berjalan untuk mendeteksi deadline. Timer dapat diperlambat saat tab di latar belakang; browser atau OS dapat membatasi pemutaran otomatis, tampilan notifikasi, navigasi, maupun fokus tab. Pengingat tidak dijamin ketika browser ditutup atau perangkat tidur. Service worker menangani klik notifikasi, bukan scheduler deadline atau push notification.
 
 Pengguna tetap boleh mencatat keberhasilan melewati dorongan maupun kejadian picking secara mandiri meskipun tidak menggunakan Pause.
 
@@ -150,6 +159,7 @@ Tidak ada kewajiban mencatat lokasi jerawat.
 
 Pengguna dapat mengelola riwayat kejadian picking melalui halaman `/picking` yang mendukung:
 - Peninjauan daftar kejadian yang diurutkan dari yang terbaru.
+- Filter periode Bulanan (rentang tanggal dalam bulan) dan Tahunan, serta paginasi.
 - Pengubahan (*edit*) detail kejadian picking milik sendiri.
 - Penghapusan (*delete*) catatan secara permanen tanpa merusak integritas sesi Pause terkait.
 
@@ -164,17 +174,18 @@ Pengguna dapat mengelola riwayat kejadian picking melalui halaman `/picking` yan
 - Jika dorongan muncul kembali setelah mereda, pengguna boleh mencatatnya sebagai kejadian baru.
 - Jika pengguna berhasil menahan dorongan tetapi kemudian melakukan picking, kedua kejadian tetap tersimpan secara terpisah.
 - Riwayat keberhasilan tidak dihapus akibat relapse.
-- Pengguna dapat mengelola riwayat keberhasilan melalui halaman `/resistance` untuk meninjau, mengedit metadata (`occurredAt`, `durationSecs`, `note`), atau menghapus catatan.
+- Pengguna dapat mengelola riwayat keberhasilan melalui halaman `/resistance` untuk meninjau, memfilter periode Bulanan/Tahunan, menavigasi halaman, mengedit metadata (`occurredAt`, `durationSecs`, `note`), atau menghapus catatan.
 
 ### E. Dashboard dan Statistik
 
 Dashboard menyajikan data visual perkembangan kebiasaan pengguna secara interaktif, minimalis, dan responsif.
 
 **Fitur Statistik yang Sudah Diimplementasikan:**
-1. **Dua Kartu Ringkasan:**
+1. **Ringkasan Statistik:**
    - Total dorongan yang berhasil dilewati (*Berhasil Menahan*).
    - Total kejadian picking (*Kejadian Picking*).
-   - Nilai ringkasan selalu sinkron dengan akumulasi titik pada grafik periode terkait.
+   - Persentase Keberhasilan dihitung dengan bobot satu poin untuk setiap keberhasilan dan setengah poin untuk setiap kejadian picking: `(jumlah keberhasilan + 0,5 × jumlah picking) / (jumlah keberhasilan + jumlah picking) × 100`. Jika tidak ada aktivitas, nilainya 0%.
+   - Kedua jumlah ringkasan selalu sinkron dengan akumulasi titik pada grafik periode terkait. Persentase ditampilkan sebagai metrik visual tambahan.
 2. **Grafik Garis Tren (Dua Seri Data):**
    - Menggunakan library Recharts v3 dengan dua seri garis yang kontras: Teal (`#0f766e`) untuk keberhasilan menahan dan Rose (`#e11d48`) untuk kejadian picking.
    - Sumbu X responsif mobile (mereduksi kepadatan label pada layar sempit tanpa memotong titik data).
@@ -192,24 +203,15 @@ Dashboard menyajikan data visual perkembangan kebiasaan pengguna secara interakt
    - *Kondisi tanpa aktivitas:* Periode tanpa aktivitas tetap menampilkan grafik garis bernilai nol, kartu ringkasan bernilai 0, dan pesan informatif: *"Belum ada aktivitas pada periode ini."*
 
 **Kebutuhan Statistik yang Belum Diimplementasikan:**
-- **Mode Mingguan:** PRD menyebutkan ringkasan harian, mingguan, dan bulanan. Saat ini implementasi menyediakan mode Bulanan (titik harian) dan Tahunan (titik bulanan); mode mingguan khusus (misalnya 7 hari terakhir atau per minggu kalender) belum tersedia.
+- **Mode Mingguan:** Mode mingguan khusus (misalnya 7 hari terakhir atau per minggu kalender) belum tersedia. Saat ini implementasi menyediakan mode Bulanan (titik harian) dan Tahunan (titik bulanan).
 - **Pemicu Paling Sering di Dashboard:** Widget/kartu pola pemicu teratas belum diimplementasikan pada dashboard.
 - **Pencapaian dan Streak:** Streak berdasarkan keberhasilan melewati dorongan belum diimplementasikan. Streak tidak hanya bergantung pada hari tanpa picking; keberhasilan menahan dorongan tetap dihargai terpisah meski terjadi relapse. Formulasi definisi teknis streak masih perlu dirumuskan.
 
 ### F. Analisis Perilaku
 
-Pengguna dapat membuka bagian analisis saat ingin memahami kebiasaannya.
+Halaman **Analisis Pola Picking** tersedia melalui Dashboard pada `/picking/analysis`. Implementasi saat ini menganalisis catatan `PickingEvent` milik pengguna pada periode Bulanan (rentang tanggal dalam satu bulan) atau Tahunan, dan menyajikan tujuh kelompok: pemicu, emosi, kekuatan dorongan, durasi picking, alasan, dampak, dan konteks. Pilihan di tiap kelompok menampilkan hitungan dan proporsi terhadap pilihan dengan hitungan tertinggi dalam kelompok tersebut; kelompok tanpa data tetap menampilkan pilihan dengan hitungan nol.
 
-Analisis awal mencakup:
-- Pemicu yang paling sering muncul.
-- Emosi yang sering menyertai picking.
-- Hubungan antara kekuatan dorongan dan kejadian picking.
-- Distribusi durasi picking.
-- Alasan yang paling sering dipilih.
-- Dampak yang sering dilaporkan.
-- Konteks yang paling sering terkait dengan kejadian.
-
-Analisis hanya menggunakan data yang benar-benar tersedia. Data kosong tidak boleh dianggap sebagai jawaban “tidak ada”.
+Analisis menggunakan `occurredAt` sebagai waktu kejadian dan tidak memasukkan catatan dengan `occurredAt = null`. Analisis dibatasi pada data picking; belum tersedia hubungan statistik antara kekuatan dorongan dan hasil menahan/picking, agregasi gabungan dengan data Resistance, maupun ringkasan pemicu teratas langsung di Dashboard. Data yang tidak diisi tetap dibedakan dari pilihan yang dicatat.
 
 ## 4. Prinsip UI/UX
 
@@ -221,6 +223,7 @@ Analisis hanya menggunakan data yang benar-benar tersedia. Data kosong tidak bol
 - Pilihan terstruktur (kode stabil) untuk memudahkan pencatatan dan analisis.
 - Bahasa tenang, suportif, dan tidak menghakimi.
 - Menghindari pengingat notifikasi berkala yang mengganggu. Pengingat yang ada bersifat kontekstual di dalam aplikasi (*in-app prompt*) saat pengguna membuka Dashboard jika ada sesi Pause `PICKED` yang belum dilengkapi detailnya, dengan opsi bebas untuk dilewati (*"Tetap buka dashboard"*).
+- Pengingat deadline Pause bersifat kontekstual: aplikasi mencoba satu pemutaran audio otomatis dan notifikasi sistem jika didukung dan diizinkan pengguna; preferensi audio dapat dikelola di halaman Pause. Perilaku dan keterbatasan teknis pengingat dijelaskan pada bagian Fitur Pause.
 - Tidak memberikan hukuman atau menghapus riwayat keberhasilan saat relapse.
 
 ## 5. Keamanan dan Kepemilikan Data
@@ -246,14 +249,14 @@ Fitur tersebut dapat dipertimbangkan setelah MVP digunakan dan kebutuhan nyata m
 ## 7. Kriteria Selesai MVP
 
 MVP dianggap memenuhi tujuan awal jika:
-1. Pengguna dapat mendaftar, login, dan logout (kebutuhan produk: alur logout lengkap; status saat ini: kriteria belum sepenuhnya terpenuhi karena tombol/tautan logout pada antarmuka pengguna belum tersedia, meskipun fungsi backend `signOut` telah ada).
+1. Pengguna dapat mendaftar, login, dan logout.
 2. Pengguna dapat menjalankan Pause dengan durasi yang tersedia.
 3. Pengguna dapat mencatat hasil setelah Pause.
 4. Pengguna dapat mencatat kejadian picking dengan jenis wajib dan detail opsional.
 5. Pengguna dapat mencatat keberhasilan tanpa harus menggunakan Pause.
 6. Keberhasilan dan relapse tersimpan tanpa saling menghapus.
 7. Dashboard menampilkan ringkasan data yang benar.
-8. Analisis dapat menghitung frekuensi pilihan dari catatan pengguna (kebutuhan produk: analisis agregasi pola dan frekuensi; status saat ini: kriteria belum terpenuhi karena fitur analisis perilaku belum diimplementasikan).
+8. Analisis dapat menghitung frekuensi pilihan dari catatan pengguna.
 9. Data antar-pengguna terisolasi dengan benar.
 10. Alur utama nyaman digunakan dari HP.
 
@@ -269,35 +272,36 @@ Status berikut merangkum audit kode. “Sudah diimplementasikan” berarti alur 
 | Riwayat picking dengan edit dan hapus | Sudah diimplementasikan | Lolos pengujian unit logic; belum diverifikasi end-to-end di browser atau terhadap database nyata. |
 | Riwayat keberhasilan dengan edit dan hapus, termasuk catatan yang terhubung ke Pause | Sudah diimplementasikan | Lolos pengujian unit logic; belum diverifikasi end-to-end di browser atau terhadap database nyata. |
 | Validasi server dan pemeriksaan kepemilikan data pada jalur yang diaudit | Sudah diimplementasikan pada jalur tersebut | Lolos pengujian unit mock; integrasi Server Action dengan transaksi Prisma terhadap database nyata belum diverifikasi end-to-end. |
-| Ringkasan progres dan statistik pada Dashboard | Sudah diimplementasikan untuk mode Bulanan (titik harian) dan Tahunan (titik bulanan) menggunakan Recharts v3 | Lolos pengujian unit komprehensif (103 assertions untuk query bounds, konversi zona waktu Asia/Jakarta, dan agregasi data); belum diverifikasi end-to-end di browser. |
+| Ringkasan progres dan statistik pada Dashboard | Sudah diimplementasikan untuk mode Bulanan (titik harian) dan Tahunan (titik bulanan) menggunakan Recharts v3; Dashboard menampilkan dua total dan persentase keberhasilan berbobot | Tes service statistik dan validasi: 15/15 lulus pada audit sinkronisasi PRD; UI belum diverifikasi end-to-end di browser. |
+| Persentase Keberhasilan Dashboard | Sudah diimplementasikan dengan rumus berbobot yang dijelaskan pada bagian Statistik | Tes rumus dan geometri indikator lulus, tetapi 2 assertion warna pada `tests/success-percentage.test.mjs` gagal karena ekspektasi warna tes berbeda dari level yang dikembalikan implementasi. Perlu diselaraskan; UI belum diverifikasi manual. |
 | Pemicu paling sering di Dashboard | Belum diimplementasikan | — |
 | Streak dan pencapaian keberhasilan | Belum diimplementasikan (definisi dan formulasi teknis belum dirumuskan) | — |
-| Analisis perilaku berdasarkan data picking dan keberhasilan | Belum diimplementasikan | — |
+| Analisis pola picking | Sudah diimplementasikan pada `/picking/analysis` untuk tujuh kelompok data picking, dengan filter Bulanan dan Tahunan; belum menganalisis data Resistance atau hubungan antara dorongan dan hasil | Tes service analisis: 19/19 lulus pada audit sinkronisasi PRD; belum diverifikasi end-to-end di browser. |
 | Navigasi utama menggunakan bottom navigation | Belum diimplementasikan (saat ini menggunakan pola Hub & Spoke melalui kartu aksi pada Dashboard) | — |
-| UI logout yang dapat digunakan pengguna | Belum diimplementasikan (fungsi `signOut` tersedia di server backend `src/auth.ts`, belum ada tombol/tautan pada antarmuka pengguna) | — |
-| Pengalaman penggunaan aktual di browser dan perangkat mobile | — | Belum diverifikasi secara manual maupun E2E di perangkat nyata. |
+| UI logout yang dapat digunakan pengguna | Sudah diimplementasikan pada header Dashboard dengan dialog konfirmasi dan aksi server | Tes header/logout dan proteksi rute: 7/7 lulus pada audit sinkronisasi PRD; alur belum diverifikasi end-to-end di lingkungan produksi. |
+| Pengingat deadline Pause: audio, preferensi lokal, izin/notifikasi sistem, dan navigasi klik notifikasi | Sudah diimplementasikan; detail perilaku dan batasannya dijelaskan pada bagian Fitur Pause | Tes Pause/reminder, termasuk klik service worker: 119/119 lulus pada audit sinkronisasi PRD. Uji manual sebelumnya dilaporkan berhasil untuk pengingat; perilaku terbaru yang memprioritaskan tab sumber saat klik notifikasi masih menunggu pengujian manual pengguna. |
+| Pengalaman keseluruhan di browser dan perangkat mobile | — | Belum diverifikasi end-to-end pada seluruh alur dan perangkat nyata. |
 | Alur login, registrasi, reset password, serta autentikasi Google dan email/password secara end-to-end | Implementasi kode tersedia pada jalur terkait | Belum diverifikasi end-to-end di lingkungan produksi (layanan pihak ketiga seperti Resend dan Google OAuth live belum diuji). |
 
 ### Statistik dan keputusan yang masih terbuka
 
 1. **Timestamp Kanonis (`occurredAt`):**
    - Kebutuhan timestamp kanonis telah diselesaikan melalui migrasi database `20261017104500_add_occurrence_timestamps`, yang menambahkan kolom `occurredAt` bertipe `TIMESTAMPTZ(3) NULL` serta indeks komposit `(userId, occurredAt)` pada tabel `PickingEvent` dan `Resistance`.
-   - Perhitungan statistik dashboard saat ini mengecualikan record lama yang memiliki `occurredAt = null`.
+   - Statistik Dashboard dan Analisis Pola Picking saat ini mengecualikan record lama yang memiliki `occurredAt = null`.
 2. **Statistik Terimplementasi:**
-   - Grafik garis ganda (Keberhasilan Menahan Dorongan vs Kejadian Picking) dan dua kartu metrik ringkasan telah diimplementasikan untuk mode **Bulanan** (rentang tanggal dalam bulan bersangkutan dengan agregasi harian) dan mode **Tahunan** (seluruh bulan dalam tahun bersangkutan).
+   - Grafik garis ganda (Keberhasilan Menahan Dorongan vs Kejadian Picking), dua kartu jumlah, dan indikator persentase keberhasilan telah diimplementasikan untuk mode **Bulanan** (rentang tanggal dalam bulan bersangkutan dengan agregasi harian) dan mode **Tahunan** (seluruh bulan dalam tahun bersangkutan).
    - Seluruh logika tanggal dan batasan waktu dipatok secara ketat pada zona waktu **`Asia/Jakarta`** (UTC+7).
 3. **Keputusan Produk yang Masih Terbuka:**
    - **Formulasi Streak dan Pencapaian:** Bagaimana mendefinisikan dan menghitung streak keberhasilan secara teknis agar adil dan tidak mematikan motivasi saat terjadi relapse (mengingat prinsip inti Jerawat Hunter menghargai setiap keberhasilan menahan dorongan secara terpisah).
    - **Pemicu Paling Sering di Dashboard:** Menentukan format visualisasi (misal: badge tag frekuensi, progress bar proporsional, atau daftar ringkas) dan apakah dibatasi pada 3 atau 5 pemicu teratas.
    - **Kebutuhan Mode Mingguan Khusus:** Memutuskan apakah aplikasi memerlukan filter mode Mingguan terpisah (misalnya 7 hari bergulir atau Senin-Minggu) di samping kustomisasi rentang tanggal harian yang sudah ada pada mode Bulanan.
    - **Transisi Navigasi:** Menentukan timeline transisi dari navigasi kartu Hub & Spoke saat ini menuju *bottom navigation* tetap pada perangkat mobile.
-   - **Penempatan UI Logout:** Menentukan lokasi tombol/menu keluar bagi pengguna (misalnya pada header profil, menu pengaturan, atau kartu terpisah).
 
 ### Catatan risiko teknis untuk tindak lanjut
 
 - **Strategi Sesi Auth.js:** `auth.config.ts` dikonfigurasi dengan `session: { strategy: "jwt" }` karena Auth.js v5 mewajibkan strategi JWT saat menggunakan penyedia kredensial (email & password). Pada saat yang sama, `PrismaAdapter` tetap dipasang untuk sinkronisasi akun OAuth dan token database. Penyesuaian ini menjawab perbedaan catatan pada `TECHNICAL_DECISIONS.md`.
 - **Idempotensi Pencatatan:** Pencatatan Resistance manual belum memiliki mekanisme idempotensi persisten; percobaan pengiriman ulang (retry) akibat kendala koneksi berpotensi menimbulkan duplikasi record.
-- **Konsistensi State Follow-up:** Penghapusan `Resistance` yang terhubung dengan Pause mengembalikan `outcome` sesi ke `null` dalam transaksi database. Perlu audit berkala untuk memastikan tidak terjadi status inkonsisten (seperti `pickingFollowUpCompleted = true` ketika data terkait dihapus).
+- **Semantik Penghapusan Catatan Terkait Pause:** Penghapusan `Resistance` yang terhubung dengan Pause mengembalikan `outcome` sesi ke `null` dalam transaksi database agar pengguna dapat memilih hasil lagi. Sebaliknya, penghapusan `PickingEvent` setelah tindak lanjut ditandai selesai mempertahankan `pickingFollowUpCompleted = true` agar prompt tindak lanjut tidak muncul kembali. Perilaku ini merupakan aturan produk yang perlu dipertahankan saat perubahan terkait dibuat.
 - **Penanganan Record Null Timestamp:** Catatan historis lama dengan `occurredAt = null` tidak muncul dalam grafik statistik berbasis periode; strategi migrasi atau backfill data lama dapat dipertimbangkan jika diperlukan di masa depan.
 
 

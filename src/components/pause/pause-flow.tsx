@@ -32,6 +32,10 @@ import {
 import {
   PAUSE_REMINDER_AUDIOS,
 } from "@/lib/pause-reminder-preferences";
+import {
+  detectPauseNotificationPlatform,
+  getPauseNotificationSettingsGuide,
+} from "@/lib/pause-notification-permission";
 import { usePauseReminder } from "@/components/pause/pause-reminder-provider";
 import { ResistanceForm } from "@/components/resistance/resistance-form";
 
@@ -120,6 +124,14 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
     requestNotificationPermission,
     playManualAudio,
   } = pauseReminder;
+  const notificationPlatform =
+    typeof navigator === "undefined"
+      ? "other"
+      : detectPauseNotificationPlatform(
+          navigator.userAgent,
+          navigator.platform,
+          navigator.maxTouchPoints
+        );
   const [pauseState, setPauseState] = useState<PauseStateData | null>(
     initialResult.success ? initialResult.data : null
   );
@@ -501,7 +513,6 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
     PAUSE_REMINDER_AUDIOS.find(
       (audio) => audio.id === reminderPreferences.selectedAudio
     ) ?? PAUSE_REMINDER_AUDIOS[0];
-
   return (
     <div className="space-y-5">
       {pageError && (
@@ -907,31 +918,42 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
 
         <div className="space-y-2">
           <p className="text-sm leading-6 text-neutral-700">
-            {notificationPermission === "unsupported"
-              ? "Notifikasi browser tidak tersedia di browser ini."
+            {notificationPermission === "checking"
+              ? "Memeriksa dukungan dan izin notifikasi..."
+              : notificationPermission === "notification-unsupported"
+                ? "Browser ini tidak menyediakan Notification API. Pengingat audio tetap dapat digunakan."
+                : notificationPermission === "service-worker-unsupported"
+                  ? "Browser ini tidak mendukung Service Worker yang diperlukan untuk notifikasi sistem. Pengingat audio tetap dapat digunakan."
+                  : notificationPermission === "ios-unsupported"
+                    ? "Notifikasi web di iPhone/iPad memerlukan web app Home Screen yang dikonfigurasi. Jerawat Hunter belum memiliki konfigurasi web app/manifest tersebut, jadi notifikasi belum tersedia di perangkat ini."
               : notificationPermission === "granted"
-                ? "Izin notifikasi telah diberikan."
-                : notificationPermission === "denied"
-                  ? "Izin notifikasi ditolak. Ubah izin situs melalui pengaturan browser untuk mengaktifkannya."
+                  ? "Izin notifikasi telah diberikan. Pengaturan browser atau sistem operasi tetap dapat membatasi tampilnya notifikasi."
+                  : notificationPermission === "denied"
+                    ? "Izin notifikasi ditolak. Buka pengaturan izin situs di browser untuk mengaktifkannya."
                     : notificationPermission === "error"
                       ? "Status izin notifikasi tidak dapat dibaca."
                       : "Izin notifikasi belum diberikan."}
           </p>
-          {notificationPermission !== "granted" &&
-            notificationPermission !== "unsupported" && (
-              <button
-                type="button"
-                onClick={() => void requestNotificationPermission()}
-                disabled={
-                  !reminderPreferencesReady ||
-                  notificationPermission === "denied"
-                }
-                className="min-h-11 rounded-xl border border-teal-800 px-4 font-semibold text-teal-900 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {notificationPermission === "denied"
-                  ? "Atur izin di browser"
-                  : "Minta izin notifikasi"}
-              </button>
+          {notificationPermission === "default" && (
+            <button
+              type="button"
+              onClick={() => void requestNotificationPermission()}
+              className="min-h-11 rounded-xl border border-teal-800 px-4 font-semibold text-teal-900 hover:bg-teal-50"
+            >
+              Aktifkan notifikasi
+            </button>
+          )}
+          {(notificationPermission === "denied" ||
+            notificationPermission === "ios-unsupported") && (
+              <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                <ol className="list-decimal space-y-1 pl-5">
+                  {getPauseNotificationSettingsGuide(
+                    notificationPlatform
+                  ).map((step) => (
+                    <li key={step}>{step}</li>
+                  ))}
+                </ol>
+              </div>
             )}
         </div>
 
@@ -944,7 +966,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                 : notificationStatus === "denied"
                   ? "Notifikasi tidak dapat ditampilkan karena izin ditolak."
                   : notificationStatus === "unsupported"
-                    ? "Notifikasi tidak dicoba karena API tidak tersedia."
+                        ? "Notifikasi tidak dicoba karena salah satu API yang diperlukan tidak tersedia."
                     : notificationStatus === "already-processed"
                       ? "Pengingat untuk sesi ini sudah dicoba sebelumnya."
                       : notificationStatus === "failed"
