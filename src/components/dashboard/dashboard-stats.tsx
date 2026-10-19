@@ -27,13 +27,17 @@ import {
   getJakartaDateParts,
   type StatsFilterInput,
 } from "@/lib/validations/stats";
+import { createAppliedStatsFilter } from "@/lib/dashboard-stats-refresh";
 import {
-  createAppliedStatsFilter,
-} from "@/lib/dashboard-stats-refresh";
+  calculateSuccessPercentage,
+  getSuccessPercentageLevel,
+  getSuccessRingGeometry,
+} from "@/lib/success-percentage";
 import {
   createLatestRequestGuard,
   type LatestRequestGuard,
 } from "@/lib/latest-request";
+import Link from "next/link";
 
 interface TooltipPayloadItem {
   name: string;
@@ -85,7 +89,7 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
-    () => false
+    () => false,
   );
 
   const nowParts = useMemo(() => getJakartaDateParts(new Date()), []);
@@ -122,6 +126,18 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
   if (requestGuardRef.current === null) {
     requestGuardRef.current = createLatestRequestGuard();
   }
+  const successPercentage = calculateSuccessPercentage(
+    stats?.totalResistance ?? 0,
+    stats?.totalPicking ?? 0,
+  );
+  const successPercentageLevel = getSuccessPercentageLevel(successPercentage);
+  const successRingGeometry = getSuccessRingGeometry(successPercentage);
+  const successPercentageColorClass = {
+    red: "text-rose-700",
+    yellow: "text-amber-700",
+    blue: "text-blue-700",
+    green: "text-emerald-700",
+  }[successPercentageLevel];
 
   const yearId = useId();
   const monthId = useId();
@@ -156,7 +172,7 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
       }
       return days;
     },
-    [nowParts.year, nowParts.month, nowParts.day]
+    [nowParts.year, nowParts.month, nowParts.day],
   );
 
   const maxSelectableDay = useMemo(() => {
@@ -204,32 +220,31 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
   }, [mode, startDay, endDay, maxSelectableDay, year, nowParts.year]);
 
   // Execute fetch for given filter
-  const loadStats = useCallback(
-    async (filterToFetch: StatsFilterInput) => {
-      const requestId = requestGuardRef.current!.begin();
-      setLoading(true);
-      setError("");
-      try {
-        const result = await fetchDashboardStats(filterToFetch);
-        if (!requestGuardRef.current!.isCurrent(requestId)) return;
-        if (!result.success) {
-          setError(result.error);
-        } else {
-          setStats(result.data);
-          setError("");
-        }
-      } catch {
-        if (requestGuardRef.current!.isCurrent(requestId)) {
-          setError("Gagal memuat statistik. Silakan periksa koneksi dan coba lagi.");
-        }
-      } finally {
-        if (requestGuardRef.current!.isCurrent(requestId)) {
-          setLoading(false);
-        }
+  const loadStats = useCallback(async (filterToFetch: StatsFilterInput) => {
+    const requestId = requestGuardRef.current!.begin();
+    setLoading(true);
+    setError("");
+    try {
+      const result = await fetchDashboardStats(filterToFetch);
+      if (!requestGuardRef.current!.isCurrent(requestId)) return;
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setStats(result.data);
+        setError("");
       }
-    },
-    []
-  );
+    } catch {
+      if (requestGuardRef.current!.isCurrent(requestId)) {
+        setError(
+          "Gagal memuat statistik. Silakan periksa koneksi dan coba lagi.",
+        );
+      }
+    } finally {
+      if (requestGuardRef.current!.isCurrent(requestId)) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
   // Initial load on mount
   useEffect(() => {
@@ -386,7 +401,7 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
                     <option key={d} value={d}>
                       {d}
                     </option>
-                  )
+                  ),
                 )}
               </select>
             </div>
@@ -409,7 +424,7 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
                     <option key={d} value={d}>
                       {d}
                     </option>
-                  )
+                  ),
                 )}
               </select>
             </div>
@@ -471,21 +486,76 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-4 transition">
-          <p className="text-xs font-semibold text-teal-800">Berhasil Menahan</p>
-          <p className="mt-1 text-2xl font-bold text-teal-950 sm:text-3xl">
-            {stats ? stats.totalResistance : 0}
-          </p>
-          <p className="mt-0.5 text-xs text-teal-700">kali dorongan ditahan</p>
-        </div>
+      <div className="@container">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 @lg:grid-cols-3">
+          <Link
+            href="/resistance"
+            aria-label="Buka riwayat keberhasilan menahan dorongan"
+            className="order-1 rounded-xl border border-teal-200 bg-teal-50/50 p-4 transition hover:bg-teal-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+          >
+            {" "}
+            <p className="text-xs font-semibold text-teal-800">
+              Berhasil Menahan
+            </p>
+            <p className="mt-1 text-2xl font-bold text-teal-950 sm:text-3xl">
+              {stats ? stats.totalResistance : 0}
+            </p>
+            <p className="mt-0.5 text-xs text-teal-700">
+              kali dorongan ditahan
+            </p>
+          </Link>
 
-        <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 transition">
-          <p className="text-xs font-semibold text-rose-800">Kejadian Picking</p>
-          <p className="mt-1 text-2xl font-bold text-rose-950 sm:text-3xl">
-            {stats ? stats.totalPicking : 0}
-          </p>
-          <p className="mt-0.5 text-xs text-rose-700">kali picking dicatat</p>
+          <Link
+            href="/picking"
+            aria-label="Buka riwayat picking"
+            className="order-2 rounded-xl border border-rose-200 bg-rose-50/50 p-4 transition hover:bg-rose-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2 @lg:order-3"
+          >
+            <p className="text-xs font-semibold text-rose-800">
+              Kejadian Picking
+            </p>
+            <p className="mt-1 text-2xl font-bold text-rose-950 sm:text-3xl">
+              {stats ? stats.totalPicking : 0}
+            </p>
+            <p className="mt-0.5 text-xs text-rose-700">kali picking dicatat</p>
+          </Link>
+
+          <div className="order-3 col-span-2 flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50/60 p-3 @lg:order-2 @lg:col-span-1">
+            <p className="text-center text-xs font-semibold text-neutral-700">
+              Persentase Keberhasilan
+            </p>
+            <div
+              role="img"
+              aria-label={`Persentase Keberhasilan ${Math.round(successPercentage)}%`}
+              className={`relative flex size-24 shrink-0 items-center justify-center ${successPercentageColorClass}`}
+            >
+              <svg
+                aria-hidden="true"
+                className="absolute inset-0 size-full -rotate-90"
+                viewBox="0 0 120 120"
+              >
+                <circle
+                  className="fill-none stroke-neutral-200"
+                  cx="60"
+                  cy="60"
+                  r="52"
+                  strokeWidth="8"
+                />
+                <circle
+                  className="fill-none stroke-current"
+                  cx="60"
+                  cy="60"
+                  r="52"
+                  strokeDasharray={successRingGeometry.strokeDasharray}
+                  strokeDashoffset={successRingGeometry.strokeDashoffset}
+                  strokeLinecap="butt"
+                  strokeWidth="8"
+                />
+              </svg>
+              <span className="relative text-2xl font-bold tabular-nums">
+                {Math.round(successPercentage)}%
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
