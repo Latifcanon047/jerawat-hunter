@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   endPauseEarly,
   getPauseState,
@@ -29,6 +29,10 @@ import {
   createPauseStartRequest,
   type PauseStartRequest,
 } from "@/lib/pause-start-request";
+import {
+  PAUSE_REMINDER_AUDIOS,
+} from "@/lib/pause-reminder-preferences";
+import { usePauseReminder } from "@/components/pause/pause-reminder-provider";
 import { ResistanceForm } from "@/components/resistance/resistance-form";
 
 type PauseStateData = {
@@ -47,7 +51,6 @@ type CompletedOutcome = {
   outcome: Outcome;
   needsPickingDetails: boolean;
 };
-
 const presets = [
   { label: "30 detik", seconds: 30 },
   { label: "1 menit", seconds: 60 },
@@ -102,7 +105,21 @@ function Notice({
 
 export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pauseReminder = usePauseReminder();
+  const {
+    preferences: reminderPreferences,
+    preferencesReady: reminderPreferencesReady,
+    storageAvailable: reminderStorageAvailable,
+    notificationPermission,
+    audioStatus,
+    notificationStatus,
+    monitorError,
+    reminderSessionId,
+    setSession: setReminderSession,
+    savePreferences: saveReminderPreferences,
+    requestNotificationPermission,
+    playManualAudio,
+  } = pauseReminder;
   const [pauseState, setPauseState] = useState<PauseStateData | null>(
     initialResult.success ? initialResult.data : null
   );
@@ -159,6 +176,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
     }
     sessionRef.current = nextSession;
     setSession(nextSession);
+    setReminderSession(nextSession);
     setRemainingSeconds(
       nextSession && !nextSession.endedAt
         ? getPauseRemainingSeconds(
@@ -167,7 +185,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           )
         : 0
     );
-  }, []);
+  }, [setReminderSession]);
 
   const runBusyAction = useCallback(async <T,>(
     action: () => Promise<T>,
@@ -242,20 +260,15 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
 
   useEffect(() => {
     const refreshWhenActive = () => {
-      if (
-        pathname === "/pause" &&
-        document.visibilityState === "visible"
-      ) {
+      if (document.visibilityState === "visible") {
         void refreshPauseState();
       }
     };
 
-    if (pathname === "/pause") {
-      pauseEntryNeedsReconciliationRef.current = true;
-      queueMicrotask(() => {
-        void refreshPauseState();
-      });
-    }
+    pauseEntryNeedsReconciliationRef.current = true;
+    queueMicrotask(() => {
+      void refreshPauseState();
+    });
     document.addEventListener("visibilitychange", refreshWhenActive);
     window.addEventListener("pageshow", refreshWhenActive);
     return () => {
@@ -264,7 +277,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
       setPauseStateVerified(false);
       refreshGuardRef.current?.invalidate();
     };
-  }, [pathname, refreshPauseState]);
+  }, [refreshPauseState]);
 
   const syncDeadline = useCallback(
     (expectedSession: PauseSessionData, retry = false) => {
@@ -484,6 +497,10 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
     session,
     completed
   );
+  const selectedReminderAudio =
+    PAUSE_REMINDER_AUDIOS.find(
+      (audio) => audio.id === reminderPreferences.selectedAudio
+    ) ?? PAUSE_REMINDER_AUDIOS[0];
 
   return (
     <div className="space-y-5">
@@ -795,6 +812,177 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           </p>
         </section>
       )}
+
+      <section
+        className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
+        aria-labelledby="pause-reminder-title"
+      >
+        <div>
+          <p className="text-sm font-semibold text-teal-800">PENGINGAT</p>
+          <h2 id="pause-reminder-title" className="mt-2 text-xl font-semibold">
+            Pengingat Pause
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            Pengingat dicoba saat waktu Pause tercapai selama halaman dan
+            browser masih berjalan. Browser atau perangkat dapat membatasi
+            audio maupun notifikasi.
+          </p>
+        </div>
+
+        <label className="flex min-h-11 items-center gap-3 text-sm font-medium text-neutral-800">
+          <input
+            type="checkbox"
+            checked={reminderPreferences.audioEnabled}
+            disabled={!reminderPreferencesReady}
+            onChange={(event) => {
+              saveReminderPreferences({
+                ...reminderPreferences,
+                audioEnabled: event.target.checked,
+              });
+            }}
+            className="size-5 accent-teal-800"
+          />
+          Aktifkan suara pengingat
+        </label>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="pause-reminder-audio"
+            className="block text-sm font-medium text-neutral-700"
+          >
+            Pilih suara
+          </label>
+          <select
+            id="pause-reminder-audio"
+            value={reminderPreferences.selectedAudio}
+            disabled={!reminderPreferencesReady || !reminderPreferences.audioEnabled}
+            onChange={(event) => {
+              const selected = PAUSE_REMINDER_AUDIOS.find(
+                (audio) => audio.id === event.target.value
+              );
+              if (selected) {
+                saveReminderPreferences({
+                  ...reminderPreferences,
+                  selectedAudio: selected.id,
+                });
+              }
+            }}
+            className="min-h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 outline-none focus:border-teal-800 focus:ring-2 focus:ring-teal-800/20 disabled:bg-neutral-100 disabled:text-neutral-500"
+          >
+            {PAUSE_REMINDER_AUDIOS.map((audio) => (
+              <option key={audio.id} value={audio.id}>
+                {audio.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs leading-5 text-neutral-500">
+            Audio: {selectedReminderAudio.creator} ·{" "}
+            <a
+              href={selectedReminderAudio.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              sumber
+            </a>{" "}
+            ·{" "}
+            <a
+              href={selectedReminderAudio.licenseUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              CC0 1.0
+            </a>
+          </p>
+        </div>
+
+        {!reminderStorageAvailable && (
+          <Notice kind="error">
+            Penyimpanan browser tidak tersedia. Preferensi hanya berlaku
+            sementara dan penanda pengingat tidak dapat disimpan lintas refresh.
+          </Notice>
+        )}
+        {monitorError && <Notice kind="error">{monitorError}</Notice>}
+
+        <div className="space-y-2">
+          <p className="text-sm leading-6 text-neutral-700">
+            {notificationPermission === "unsupported"
+              ? "Notifikasi browser tidak tersedia di browser ini."
+              : notificationPermission === "granted"
+                ? "Izin notifikasi telah diberikan."
+                : notificationPermission === "denied"
+                  ? "Izin notifikasi ditolak. Ubah izin situs melalui pengaturan browser untuk mengaktifkannya."
+                    : notificationPermission === "error"
+                      ? "Status izin notifikasi tidak dapat dibaca."
+                      : "Izin notifikasi belum diberikan."}
+          </p>
+          {notificationPermission !== "granted" &&
+            notificationPermission !== "unsupported" && (
+              <button
+                type="button"
+                onClick={() => void requestNotificationPermission()}
+                disabled={
+                  !reminderPreferencesReady ||
+                  notificationPermission === "denied"
+                }
+                className="min-h-11 rounded-xl border border-teal-800 px-4 font-semibold text-teal-900 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {notificationPermission === "denied"
+                  ? "Atur izin di browser"
+                  : "Minta izin notifikasi"}
+              </button>
+            )}
+        </div>
+
+        {notificationStatus !== "idle" && (
+          <p role="status" className="text-sm leading-6 text-neutral-600">
+            {notificationStatus === "shown"
+              ? "Notifikasi telah diserahkan ke browser; tampil atau tidaknya bergantung pada pengaturan browser dan perangkat."
+              : notificationStatus === "permission-required"
+                ? "Notifikasi tidak dicoba karena izin belum diberikan."
+                : notificationStatus === "denied"
+                  ? "Notifikasi tidak dapat ditampilkan karena izin ditolak."
+                  : notificationStatus === "unsupported"
+                    ? "Notifikasi tidak dicoba karena API tidak tersedia."
+                    : notificationStatus === "already-processed"
+                      ? "Pengingat untuk sesi ini sudah dicoba sebelumnya."
+                      : notificationStatus === "failed"
+                        ? "Notifikasi tidak dapat dibuat; percobaan audio tetap berjalan secara terpisah."
+                        : null}
+          </p>
+        )}
+
+        {reminderSessionId && audioStatus !== "idle" && (
+          <div className="space-y-2">
+            <p role="status" className="text-sm leading-6 text-neutral-600">
+              {audioStatus === "playing"
+                ? "Audio sedang diputar."
+                : audioStatus === "failed"
+                  ? "Audio otomatis tidak dapat dimulai. Kamu dapat mencoba memutarnya secara manual."
+                  : audioStatus === "completed"
+                    ? "Audio pengingat selesai diputar."
+                    : audioStatus === "stopped"
+                      ? "Audio dihentikan."
+                      : "Audio pengingat dinonaktifkan."}
+            </p>
+            {audioStatus !== "playing" && (
+              reminderPreferences.audioEnabled &&
+              (audioStatus === "failed" ||
+                audioStatus === "disabled" ||
+                audioStatus === "stopped") && (
+                <button
+                  type="button"
+                  onClick={playManualAudio}
+                  className="min-h-11 rounded-xl border border-teal-800 px-4 font-semibold text-teal-900 hover:bg-teal-50"
+                >
+                  Putar suara
+                </button>
+              )
+            )}
+          </div>
+        )}
+      </section>
 
       {pauseStateVerified && pauseState?.pickingFollowUps.length ? (
         <section className="space-y-3" aria-labelledby="picking-follow-up-title">
