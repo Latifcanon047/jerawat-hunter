@@ -29,7 +29,7 @@ export function PickingCreateForm() {
       if (!pauseSessionId) return;
       const requestId = requestGuardRef.current!.begin();
       try {
-        const result = await getPauseState();
+        const result = await getPauseState("picking-follow-up");
         if (!requestGuardRef.current!.isCurrent(requestId)) return;
         if (!result.success) {
           setLookup((current) => ({

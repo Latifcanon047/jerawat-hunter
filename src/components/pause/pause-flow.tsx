@@ -222,7 +222,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
     const requestId = refreshGuardRef.current!.begin();
     setPauseStateVerified(false);
     try {
-      const result = await getPauseState();
+      const result = await getPauseState("pause-flow-refresh");
       if (!refreshGuardRef.current!.isCurrent(requestId)) return;
       if (!result.success) {
         setPageError(result.error);

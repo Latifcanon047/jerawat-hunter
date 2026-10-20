@@ -419,7 +419,7 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
   const refreshSession = useCallback(async () => {
     const generation = ++refreshGenerationRef.current;
     try {
-      const result = await getPauseState();
+      const result = await getPauseState("pause-reminder-provider");
       if (generation !== refreshGenerationRef.current) return;
       if (!result.success) {
         setMonitorError(result.error);

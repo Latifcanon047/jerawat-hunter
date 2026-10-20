@@ -54,14 +54,32 @@ type PauseActionResult<T> =
 
 const SLOW_PAUSE_STATE_TRANSACTION_MS = 1000;
 
+const PAUSE_STATE_CALLERS = [
+  "pause-page",
+  "pause-flow-refresh",
+  "pause-reminder-provider",
+  "dashboard-refresh",
+  "picking-follow-up",
+] as const;
+
+type PauseStateCaller = (typeof PAUSE_STATE_CALLERS)[number];
+
 type PauseStateQueryDurations = Record<string, number>;
 
 interface PauseStateDiagnostics {
   correlationId: string;
+  caller: PauseStateCaller | "unknown";
   callbackStarted: boolean;
   transactionStartWaitMs: number | null;
+  callbackDurationMs: number | null;
+  transactionCompletionMs: number | null;
   transactionTotalMs: number;
   queryDurationsMs: PauseStateQueryDurations;
+  queryRowCounts: {
+    pauseUnresolved: number | null;
+    pauseFollowUpCandidates: number | null;
+    pauseFollowUps: number | null;
+  };
   poolBefore: ReturnType<typeof getDatabasePoolSnapshot>;
   poolAfter: ReturnType<typeof getDatabasePoolSnapshot>;
   errorCode?: string;
@@ -185,7 +203,9 @@ async function lockUserRow(
   }
 }
 
-export async function getPauseState(): Promise<
+export async function getPauseState(
+  caller: PauseStateCaller = "pause-page"
+): Promise<
   PauseActionResult<{
     session: PauseSessionData | null;
     pickingFollowUps: PauseSessionData[];
@@ -193,10 +213,20 @@ export async function getPauseState(): Promise<
 > {
   try {
     const userId = await requireUserId();
+    const diagnosticCaller: PauseStateCaller | "unknown" =
+      (PAUSE_STATE_CALLERS as readonly string[]).includes(caller)
+        ? caller
+        : "unknown";
     const correlationId = randomUUID();
     const poolBefore = getDatabasePoolSnapshot();
     const queryDurationsMs: PauseStateQueryDurations = {};
+    const queryRowCounts: PauseStateDiagnostics["queryRowCounts"] = {
+      pauseUnresolved: null,
+      pauseFollowUpCandidates: null,
+      pauseFollowUps: null,
+    };
     let callbackStartedAt: number | null = null;
+    let callbackFinishedAt: number | null = null;
     const transactionCallStartedAt = performance.now();
     let result: {
       session: PauseSession | null;
@@ -216,6 +246,7 @@ export async function getPauseState(): Promise<
                 orderBy: { startedAt: "asc" },
               })
           );
+          queryRowCounts.pauseUnresolved = unresolvedSessions.length;
           const session = selectPauseSessionToResume(unresolvedSessions);
 
           const pickingFollowUpCandidates = await measurePauseStateQuery(
@@ -231,10 +262,14 @@ export async function getPauseState(): Promise<
                 orderBy: { startedAt: "desc" },
               })
           );
+          queryRowCounts.pauseFollowUpCandidates =
+            pickingFollowUpCandidates.length;
           const pickingFollowUps = selectPendingPickingFollowUps(
             userId,
             pickingFollowUpCandidates
           );
+          queryRowCounts.pauseFollowUps = pickingFollowUps.length;
+          callbackFinishedAt = performance.now();
           return { session, pickingFollowUps };
         },
         { maxWait: 5000, isolationLevel: "RepeatableRead" }
@@ -244,14 +279,24 @@ export async function getPauseState(): Promise<
       logPauseStateDiagnostics(
         {
           correlationId,
+          caller: diagnosticCaller,
           callbackStarted: callbackStartedAt !== null,
           transactionStartWaitMs:
             callbackStartedAt === null
               ? null
               : callbackStartedAt - transactionCallStartedAt,
+          callbackDurationMs:
+            callbackStartedAt === null || callbackFinishedAt === null
+              ? null
+              : callbackFinishedAt - callbackStartedAt,
+          transactionCompletionMs:
+            callbackFinishedAt === null
+              ? null
+              : transactionFinishedAt - callbackFinishedAt,
           transactionTotalMs:
             transactionFinishedAt - transactionCallStartedAt,
           queryDurationsMs,
+          queryRowCounts,
           poolBefore,
           poolAfter: getDatabasePoolSnapshot(),
           errorCode: getErrorCode(error),
@@ -265,13 +310,23 @@ export async function getPauseState(): Promise<
     logPauseStateDiagnostics(
       {
         correlationId,
+        caller: diagnosticCaller,
         callbackStarted: callbackStartedAt !== null,
         transactionStartWaitMs:
           callbackStartedAt === null
             ? null
             : callbackStartedAt - transactionCallStartedAt,
+        callbackDurationMs:
+          callbackStartedAt === null || callbackFinishedAt === null
+            ? null
+            : callbackFinishedAt - callbackStartedAt,
+        transactionCompletionMs:
+          callbackFinishedAt === null
+            ? null
+            : transactionFinishedAt - callbackFinishedAt,
         transactionTotalMs: transactionFinishedAt - transactionCallStartedAt,
         queryDurationsMs,
+        queryRowCounts,
         poolBefore,
         poolAfter: getDatabasePoolSnapshot(),
       },

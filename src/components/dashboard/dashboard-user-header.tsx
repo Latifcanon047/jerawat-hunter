@@ -188,17 +188,16 @@ function DashboardUserHeaderContent({
           </svg>
         </button>
 
-        <Image
-          src="/jawhan-logo.png"
-          alt=""
-          width={612}
-          height={408}
-          priority
-          className="h-7 w-9 shrink-0 object-contain sm:h-9 sm:w-[54px]"
-        />
-        <span className="shrink-0 font-[family-name:var(--font-geist-sans)] text-[15px] font-bold tracking-[-0.045em] text-teal-800 sm:text-lg">
-          Jawhan
-        </span>
+        <div className="flex items-center">
+          <Image
+            src="/jawhan-logo2.png"
+            alt="Jawhan"
+            width={612}
+            height={408}
+            priority
+            className="h-16 w-[96px] shrink-0 object-contain sm:h-20 sm:w-[120px]"
+          />
+        </div>
 
         <div ref={accountRef} className="relative ml-auto min-w-0">
           <button

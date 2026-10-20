@@ -78,7 +78,9 @@ export function PickingForm(props: PickingFormProps) {
   const eventData = isEditing ? props.event : null;
 
   useLayoutEffect(() => {
-    if ((!isEditing && !isManualCreate) || !formRef.current) return;
+    if ((!isEditing && !isManualCreate && !isPauseCreate) || !formRef.current) {
+      return;
+    }
 
     const initialValues = Array.from(
       new FormData(formRef.current).entries(),
@@ -88,7 +90,18 @@ export function PickingForm(props: PickingFormProps) {
       initialValues,
       initialOccurredAtRef.current,
     );
-  }, [isEditing, isManualCreate]);
+  }, [isEditing, isManualCreate, isPauseCreate]);
+
+  function getCurrentFormSnapshot() {
+    const form = formRef.current;
+    if (!form) return null;
+
+    const currentValues = Array.from(
+      new FormData(form).entries(),
+      ([name, value]) => [name, value.toString()] as const,
+    );
+    return createFormSnapshot(currentValues, occurredAt);
+  }
 
   useEffect(() => {
     if (props.mode !== "create" || !saved || isManualCreate) return;
@@ -107,6 +120,13 @@ export function PickingForm(props: PickingFormProps) {
     setSaved(false);
 
     const form = new FormData(event.currentTarget);
+    const submittedSnapshot = createFormSnapshot(
+      Array.from(
+        form.entries(),
+        ([name, value]) => [name, value.toString()] as const,
+      ),
+      occurredAt,
+    );
     const details = {
       pickingType: form.get("pickingType"),
       triggers: form.getAll("triggers"),
@@ -150,6 +170,7 @@ export function PickingForm(props: PickingFormProps) {
           if (isManualCreate) showToast("error", result.error);
           return;
         }
+        initialFormSnapshotRef.current = submittedSnapshot;
         if (isManualCreate) {
           setSaved(true);
           setManualModalOpen(false);
@@ -173,6 +194,7 @@ export function PickingForm(props: PickingFormProps) {
           showToast("error", result.error);
           return;
         }
+        initialFormSnapshotRef.current = submittedSnapshot;
         setSaved(true);
         setEditModalOpen(false);
         props.onUpdated(result.data.event);
@@ -193,19 +215,13 @@ export function PickingForm(props: PickingFormProps) {
   function requestEditClose() {
     if (pendingRef.current || !isEditing) return;
 
-    const form = formRef.current;
     const initialSnapshot = initialFormSnapshotRef.current;
-    if (!form || initialSnapshot === null) {
-      setDiscardConfirmationOpen(true);
-      return;
-    }
-
-    const currentValues = Array.from(
-      new FormData(form).entries(),
-      ([name, value]) => [name, value.toString()] as const,
-    );
-    const currentSnapshot = createFormSnapshot(currentValues, occurredAt);
-    if (currentSnapshot !== initialSnapshot) {
+    const currentSnapshot = getCurrentFormSnapshot();
+    if (
+      initialSnapshot !== null &&
+      currentSnapshot !== null &&
+      currentSnapshot !== initialSnapshot
+    ) {
       setDiscardConfirmationOpen(true);
       return;
     }
@@ -215,24 +231,37 @@ export function PickingForm(props: PickingFormProps) {
   function requestManualClose() {
     if (pendingRef.current || saved || !isManualCreate) return;
 
-    const form = formRef.current;
     const initialSnapshot = initialFormSnapshotRef.current;
-    if (!form || initialSnapshot === null) {
-      setDiscardConfirmationOpen(true);
-      return;
-    }
-
-    const currentValues = Array.from(
-      new FormData(form).entries(),
-      ([name, value]) => [name, value.toString()] as const,
-    );
+    const currentSnapshot = getCurrentFormSnapshot();
     if (
-      createFormSnapshot(currentValues, occurredAt) !== initialSnapshot
+      initialSnapshot !== null &&
+      currentSnapshot !== null &&
+      currentSnapshot !== initialSnapshot
     ) {
       setDiscardConfirmationOpen(true);
       return;
     }
     setManualModalOpen(false);
+  }
+
+  function requestPauseClose() {
+    if (pendingRef.current || !isPauseCreate) return;
+    if (saved) {
+      setPauseModalOpen(false);
+      return;
+    }
+
+    const initialSnapshot = initialFormSnapshotRef.current;
+    const currentSnapshot = getCurrentFormSnapshot();
+    if (
+      initialSnapshot !== null &&
+      currentSnapshot !== null &&
+      currentSnapshot !== initialSnapshot
+    ) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+    setPauseModalOpen(false);
   }
 
   function editFooter() {
@@ -601,36 +630,75 @@ export function PickingForm(props: PickingFormProps) {
 
   if (isPauseCreate) {
     return (
-      <Modal
-        isOpen={pauseModalOpen}
-        title="Catat kejadian picking"
-        description="Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."
-        closeDisabled={pending}
-        onRequestClose={() => setPauseModalOpen(false)}
-        onClosed={props.onCancel}
-        footer={
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setPauseModalOpen(false)}
-              disabled={pending}
-              className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
-            >
-              {saved ? "Kembali" : "Batal"}
-            </button>
-            <button
-              type="submit"
-              form={formId}
-              disabled={pending || saved}
-              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
-            >
-              {pending ? "Menyimpan..." : "Simpan catatan"}
-            </button>
-          </div>
-        }
-      >
-        {form}
-      </Modal>
+      <>
+        <Modal
+          isOpen={pauseModalOpen}
+          title="Catat kejadian picking"
+          description="Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."
+          closeDisabled={pending}
+          onRequestClose={requestPauseClose}
+          onClosed={props.onCancel}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={requestPauseClose}
+                disabled={pending}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+              >
+                {saved ? "Kembali" : "Batal"}
+              </button>
+              <button
+                type="submit"
+                form={formId}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+              >
+                {pending ? "Menyimpan..." : "Simpan catatan"}
+              </button>
+            </div>
+          }
+        >
+          {form}
+        </Modal>
+        <Modal
+          isOpen={discardConfirmationOpen}
+          title="Buang perubahan?"
+          description="Perubahan yang belum disimpan akan hilang."
+          onRequestClose={() => setDiscardConfirmationOpen(false)}
+          onClosed={() => {
+            if (discardConfirmedRef.current) {
+              discardConfirmedRef.current = false;
+              setPauseModalOpen(false);
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDiscardConfirmationOpen(false)}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Tetap mengisi
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  discardConfirmedRef.current = true;
+                  setDiscardConfirmationOpen(false);
+                }}
+                className="min-h-12 rounded-xl bg-rose-700 px-5 font-semibold text-white hover:bg-rose-800"
+              >
+                Buang perubahan
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-700">
+            Apakah kamu yakin ingin menutup form catatan ini?
+          </p>
+        </Modal>
+      </>
     );
   }
 

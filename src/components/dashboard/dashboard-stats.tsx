@@ -92,7 +92,8 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
     () => false,
   );
 
-  const nowParts = useMemo(() => getJakartaDateParts(new Date()), []);
+  const [nowParts, setNowParts] = useState({ year: 2024, month: 1, day: 1 });
+  const [nowPartsReady, setNowPartsReady] = useState(false);
 
   // Filter state being edited in the form
   const [mode, setMode] = useState<"monthly" | "yearly">("monthly");
@@ -100,6 +101,22 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
   const [month, setMonth] = useState<number>(nowParts.month);
   const [startDay, setStartDay] = useState<number>(1);
   const [endDay, setEndDay] = useState<number>(nowParts.day);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      const currentDate = getJakartaDateParts(new Date());
+      setNowParts(currentDate);
+      setYear(currentDate.year);
+      setMonth(currentDate.month);
+      setEndDay(currentDate.day);
+      setNowPartsReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Applied data and fetch state
   const [stats, setStats] = useState<StatsResult | null>(null);
@@ -248,6 +265,9 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
 
   // Initial load on mount
   useEffect(() => {
+    if (!nowPartsReady) return;
+
+    appliedFilterRef.current!.apply(initialFilter);
     let active = true;
     queueMicrotask(() => {
       if (active) void loadStats(initialFilter);
@@ -256,18 +276,19 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
       active = false;
       requestGuardRef.current?.invalidate();
     };
-  }, [initialFilter, loadStats]);
+  }, [initialFilter, loadStats, nowPartsReady]);
 
   useEffect(() => {
+    if (!nowPartsReady) return;
     if (lastRefreshSignalRef.current === refreshSignal) return;
     lastRefreshSignalRef.current = refreshSignal;
     void loadStats(appliedFilterRef.current!.get());
-  }, [loadStats, refreshSignal]);
+  }, [loadStats, nowPartsReady, refreshSignal]);
 
   // Form submit handler
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validationError) return;
+    if (!nowPartsReady || validationError) return;
 
     if (mode === "monthly") {
       const appliedFilter: StatsFilterInput = {
@@ -335,10 +356,11 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
       </div>
 
       {/* Filter Form */}
-      <form
-        onSubmit={handleApply}
-        className="rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 space-y-4"
-      >
+      {nowPartsReady ? (
+        <form
+          onSubmit={handleApply}
+          className="rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 space-y-4"
+        >
         {mode === "monthly" ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>
@@ -473,7 +495,15 @@ export function DashboardStats({ refreshSignal }: { refreshSignal: number }) {
             {loading ? "Memuat..." : "Tampilkan"}
           </button>
         </div>
-      </form>
+        </form>
+      ) : (
+        <div
+          role="status"
+          className="rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 text-sm text-neutral-500"
+        >
+          Memuat filter periode...
+        </div>
+      )}
 
       {/* Global Error Banner */}
       {error && (

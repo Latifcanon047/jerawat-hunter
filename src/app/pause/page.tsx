@@ -37,7 +37,7 @@ export default function PausePage() {
 
 async function PauseContent() {
   await connection();
-  const result = await getPauseState();
+  const result = await getPauseState("pause-page");
   return <PauseFlow initialResult={result} />;
 }
 

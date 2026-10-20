@@ -44,7 +44,7 @@ export function DashboardHome({
     }
     setStatusVerified(false);
     try {
-      const result = await getPauseState();
+      const result = await getPauseState("dashboard-refresh");
       if (!requestGuardRef.current!.isCurrent(requestId)) return;
       if (!result.success) {
         setError(result.error);

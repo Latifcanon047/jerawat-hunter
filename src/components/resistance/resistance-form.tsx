@@ -92,6 +92,16 @@ export function ResistanceForm(props: ResistanceFormProps) {
     lockRef.current = createSubmissionLock();
   }
 
+  function getCurrentFormSnapshot() {
+    return createFormSnapshot(
+      [
+        ["durationSecs", durationSecs],
+        ["note", note],
+      ],
+      occurredAt,
+    );
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pendingRef.current || !lockRef.current!.tryAcquire()) return;
@@ -121,6 +131,7 @@ export function ResistanceForm(props: ResistanceFormProps) {
           showToast("error", result.error);
           return;
         }
+        initialFormSnapshotRef.current = getCurrentFormSnapshot();
         setSaved(true);
         setStandaloneModalOpen(false);
         savedNotifiedRef.current = true;
@@ -139,6 +150,7 @@ export function ResistanceForm(props: ResistanceFormProps) {
           setError("Hasil sesi belum terkonfirmasi. Silakan coba lagi.");
           return;
         }
+        initialFormSnapshotRef.current = getCurrentFormSnapshot();
         props.onSaved({
           id: result.data.session.id,
           outcome: "SUCCEEDED",
@@ -153,6 +165,7 @@ export function ResistanceForm(props: ResistanceFormProps) {
           showToast("error", result.error);
           return;
         }
+        initialFormSnapshotRef.current = getCurrentFormSnapshot();
         setSaved(true);
         setEditModalOpen(false);
         props.onUpdated(result.data.record);
@@ -173,14 +186,7 @@ export function ResistanceForm(props: ResistanceFormProps) {
   function requestEditClose() {
     if (pendingRef.current || !isEditing) return;
 
-    const currentSnapshot = createFormSnapshot(
-      [
-        ["durationSecs", durationSecs],
-        ["note", note],
-      ],
-      occurredAt,
-    );
-    if (currentSnapshot !== initialFormSnapshotRef.current) {
+    if (getCurrentFormSnapshot() !== initialFormSnapshotRef.current) {
       setDiscardConfirmationOpen(true);
       return;
     }
@@ -190,18 +196,21 @@ export function ResistanceForm(props: ResistanceFormProps) {
   function requestStandaloneClose() {
     if (pendingRef.current || saved || !isStandalone) return;
 
-    const currentSnapshot = createFormSnapshot(
-      [
-        ["durationSecs", durationSecs],
-        ["note", note],
-      ],
-      occurredAt,
-    );
-    if (currentSnapshot !== initialFormSnapshotRef.current) {
+    if (getCurrentFormSnapshot() !== initialFormSnapshotRef.current) {
       setDiscardConfirmationOpen(true);
       return;
     }
     setStandaloneModalOpen(false);
+  }
+
+  function requestPauseClose() {
+    if (pendingRef.current || !isPause) return;
+
+    if (getCurrentFormSnapshot() !== initialFormSnapshotRef.current) {
+      setDiscardConfirmationOpen(true);
+      return;
+    }
+    setPauseModalOpen(false);
   }
 
   const form = (
@@ -468,36 +477,75 @@ export function ResistanceForm(props: ResistanceFormProps) {
 
   if (props.mode === "pause") {
     return (
-      <Modal
-        isOpen={pauseModalOpen}
-        title="Catat keberhasilan"
-        description="Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."
-        closeDisabled={pending}
-        onRequestClose={() => setPauseModalOpen(false)}
-        onClosed={props.onCancel}
-        footer={
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setPauseModalOpen(false)}
-              disabled={pending}
-              className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              form={formId}
-              disabled={pending || saved}
-              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
-            >
-              {pending ? "Menyimpan..." : "Konfirmasi & simpan"}
-            </button>
-          </div>
-        }
-      >
-        {form}
-      </Modal>
+      <>
+        <Modal
+          isOpen={pauseModalOpen}
+          title="Catat keberhasilan"
+          description="Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."
+          closeDisabled={pending}
+          onRequestClose={requestPauseClose}
+          onClosed={props.onCancel}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={requestPauseClose}
+                disabled={pending}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form={formId}
+                disabled={pending || saved}
+                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+              >
+                {pending ? "Menyimpan..." : "Konfirmasi & simpan"}
+              </button>
+            </div>
+          }
+        >
+          {form}
+        </Modal>
+        <Modal
+          isOpen={discardConfirmationOpen}
+          title="Buang perubahan?"
+          description="Perubahan yang belum disimpan akan hilang."
+          onRequestClose={() => setDiscardConfirmationOpen(false)}
+          onClosed={() => {
+            if (discardConfirmedRef.current) {
+              discardConfirmedRef.current = false;
+              setPauseModalOpen(false);
+            }
+          }}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDiscardConfirmationOpen(false)}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Tetap mengisi
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  discardConfirmedRef.current = true;
+                  setDiscardConfirmationOpen(false);
+                }}
+                className="min-h-12 rounded-xl bg-rose-700 px-5 font-semibold text-white hover:bg-rose-800"
+              >
+                Buang perubahan
+              </button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-700">
+            Apakah kamu yakin ingin menutup form catatan ini?
+          </p>
+        </Modal>
+      </>
     );
   }
 
