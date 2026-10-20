@@ -888,14 +888,18 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           </select>
           <p className="text-xs leading-5 text-neutral-500">
             Audio: {selectedReminderAudio.creator} ·{" "}
-            <a
-              href={selectedReminderAudio.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              sumber
-            </a>{" "}
+            {selectedReminderAudio.sourceUrl ? (
+              <a
+                href={selectedReminderAudio.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                sumber
+              </a>
+            ) : (
+              "sintesis orisinal"
+            )}{" "}
             ·{" "}
             <a
               href={selectedReminderAudio.licenseUrl}

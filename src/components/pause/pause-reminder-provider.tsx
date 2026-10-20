@@ -252,7 +252,7 @@ export function PauseReminderProvider({ children }: { children: ReactNode }) {
     try {
       audio = new Audio(selectedAudio.src);
       audio.loop = false;
-      audio.volume = 0.65;
+      audio.volume = 0.9;
       audio.onended = () => {
         if (audioRef.current === audio) audioRef.current = null;
         setAudioStatus("completed");

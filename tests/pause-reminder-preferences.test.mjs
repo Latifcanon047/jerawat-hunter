@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 import {
   claimPauseReminder,
@@ -20,17 +22,53 @@ class MemoryStorage {
   }
 }
 
-test("defaults to enabled gentle chimes and exposes three CC0 audio choices", () => {
+test("keeps the original defaults and exposes six CC0 audio choices", () => {
   assert.deepEqual(
     DEFAULT_PAUSE_REMINDER_PREFERENCES,
     { audioEnabled: true, selectedAudio: "gentle-chimes" }
   );
-  assert.equal(PAUSE_REMINDER_AUDIOS.length, 3);
+  assert.deepEqual(
+    PAUSE_REMINDER_AUDIOS.slice(0, 3).map((audio) => audio.id),
+    ["gentle-chimes", "ambient-bell", "soft-chime"]
+  );
+  assert.deepEqual(
+    PAUSE_REMINDER_AUDIOS.slice(3).map((audio) => audio.id),
+    ["pulse-signal", "digital-alert", "bright-chime"]
+  );
+  assert.equal(PAUSE_REMINDER_AUDIOS.length, 6);
   assert.ok(
     PAUSE_REMINDER_AUDIOS.every((audio) =>
       audio.licenseUrl.includes("publicdomain/zero/1.0")
     )
   );
+  assert.ok(
+    PAUSE_REMINDER_AUDIOS.slice(3).every(
+      (audio) => audio.creator === "Jerawat Hunter" && audio.sourceUrl === null
+    )
+  );
+});
+
+test("ships original synthesized sounds as unclipped PCM WAV assets", () => {
+  for (const audio of PAUSE_REMINDER_AUDIOS.slice(3)) {
+    const filePath = path.join(
+      process.cwd(),
+      "public",
+      audio.src.replace(/^\//, "")
+    );
+    const wav = readFileSync(filePath);
+    assert.equal(wav.toString("ascii", 0, 4), "RIFF");
+    assert.equal(wav.toString("ascii", 8, 12), "WAVE");
+    assert.equal(wav.readUInt16LE(20), 1);
+    assert.equal(wav.readUInt16LE(22), 1);
+    assert.equal(wav.readUInt32LE(24), 44100);
+    assert.equal(wav.readUInt16LE(34), 16);
+
+    let peak = 0;
+    for (let offset = 44; offset + 1 < wav.length; offset += 2) {
+      peak = Math.max(peak, Math.abs(wav.readInt16LE(offset)) / 32768);
+    }
+    assert.ok(peak <= 0.671, `${audio.id} peak was ${peak}`);
+  }
 });
 
 test("reads valid preferences and falls back safely for invalid values", () => {
@@ -57,6 +95,25 @@ test("reads valid preferences and falls back safely for invalid values", () => {
     readPauseReminderPreferences(storage).preferences,
     DEFAULT_PAUSE_REMINDER_PREFERENCES
   );
+});
+
+test("persists selections for all six presets without changing the default", () => {
+  const storage = new MemoryStorage();
+  assert.equal(DEFAULT_PAUSE_REMINDER_PREFERENCES.selectedAudio, "gentle-chimes");
+
+  for (const audio of PAUSE_REMINDER_AUDIOS) {
+    assert.equal(
+      writePauseReminderPreferences(
+        { audioEnabled: true, selectedAudio: audio.id },
+        storage
+      ),
+      true
+    );
+    assert.equal(
+      readPauseReminderPreferences(storage).preferences.selectedAudio,
+      audio.id
+    );
+  }
 });
 
 test("falls back safely for malformed data and unavailable storage", () => {

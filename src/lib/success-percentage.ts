@@ -18,7 +18,7 @@ export function calculateSuccessPercentage(
   const scaledResistance = resistance / scale;
   const scaledPicking = picking / scale;
   const total = scaledResistance + scaledPicking;
-  const percentage = ((scaledResistance + scaledPicking * 0.5) / total) * 100;
+  const percentage = ((scaledResistance + scaledPicking * 0) / total) * 100;
 
   return Math.min(100, Math.max(0, percentage));
 }

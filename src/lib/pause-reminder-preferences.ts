@@ -23,6 +23,30 @@ export const PAUSE_REMINDER_AUDIOS = [
     sourceUrl: "https://freesound.org/people/Jofae/sounds/380482",
     licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
   },
+  {
+    id: "pulse-signal",
+    label: "Sinyal berulang",
+    src: "/audio/pause-pulse-signal.wav",
+    creator: "Jerawat Hunter",
+    sourceUrl: null,
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+  },
+  {
+    id: "digital-alert",
+    label: "Alert digital",
+    src: "/audio/pause-digital-alert.wav",
+    creator: "Jerawat Hunter",
+    sourceUrl: null,
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+  },
+  {
+    id: "bright-chime",
+    label: "Lonceng tegas",
+    src: "/audio/pause-bright-chime.wav",
+    creator: "Jerawat Hunter",
+    sourceUrl: null,
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+  },
 ] as const;
 
 export type PauseReminderAudioId =
