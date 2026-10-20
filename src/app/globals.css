@@ -56,6 +56,36 @@ body {
   animation: modal-enter 150ms ease-out;
 }
 
+.app-drawer:not([open]) {
+  display: none;
+}
+
+.app-drawer[open] {
+  display: flex;
+  animation: drawer-enter 150ms ease-out;
+}
+
+.app-drawer::backdrop {
+  background-color: rgb(10 10 10 / 30%);
+  animation: modal-backdrop-enter 150ms ease-out;
+}
+
+.app-drawer[open]::backdrop {
+  background-color: rgb(10 10 10 / 30%);
+}
+
+@keyframes drawer-enter {
+  from {
+    opacity: 0.7;
+    transform: translateX(-1rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .app-modal[data-open="false"]::backdrop {
   animation: none;
   opacity: 0;
@@ -68,5 +98,10 @@ body {
   .app-modal::backdrop {
     animation: none;
     transition: none;
+  }
+
+  .app-drawer[open],
+  .app-drawer::backdrop {
+    animation: none;
   }
 }

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { auth } from "@/auth";
 import { getPauseState } from "@/actions/pause";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
-import { DashboardUserHeader } from "@/components/dashboard/dashboard-user-header";
+import { PrivateAppHeader } from "@/components/dashboard/private-app-header";
 
 export const metadata: Metadata = {
   title: "Beranda — Jerawat Hunter",
@@ -14,11 +13,9 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#f7f7f4] px-4 pb-10 pt-8 text-neutral-900 sm:px-6 sm:pt-12">
+      <PrivateAppHeader />
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
-          <Suspense fallback={<DashboardUserHeaderSkeleton />}>
-            <DashboardUserHeaderSection />
-          </Suspense>
           <p className="text-sm font-semibold tracking-wide text-teal-800">
             JERAWAT HUNTER
           </p>
@@ -38,20 +35,6 @@ export default function Home() {
         </footer>
       </div>
     </main>
-  );
-}
-
-async function DashboardUserHeaderSection() {
-  const session = await auth();
-  return <DashboardUserHeader user={session?.user} />;
-}
-
-function DashboardUserHeaderSkeleton() {
-  return (
-    <div
-      className="mb-6 flex min-h-[34px] items-center justify-end gap-2.5 border-b border-neutral-200/80 pb-3"
-      aria-hidden="true"
-    />
   );
 }
 

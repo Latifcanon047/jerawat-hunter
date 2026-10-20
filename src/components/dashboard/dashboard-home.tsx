@@ -120,24 +120,6 @@ export function DashboardHome({
         </Link>
         <StandaloneResistanceButton onSaved={notifyStatsCreated} />
         <StandalonePickingButton onStatsRefresh={notifyStatsCreated} />
-        <Link
-          href="/picking"
-          className="flex min-h-12 w-full items-center justify-center rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
-        >
-          Buka riwayat picking
-        </Link>
-        <Link
-          href="/picking/analysis"
-          className="flex min-h-12 w-full items-center justify-center rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
-        >
-          Analisis Pola Picking
-        </Link>
-        <Link
-          href="/resistance"
-          className="flex min-h-12 w-full items-center justify-center rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
-        >
-          Buka riwayat keberhasilan
-        </Link>
       </section>
 
       <DashboardStats refreshSignal={statsRefreshSignal} />

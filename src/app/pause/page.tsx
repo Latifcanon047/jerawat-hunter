@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getPauseState } from "@/actions/pause";
 import { PauseFlow } from "@/components/pause/pause-flow";
+import { PrivateAppHeader } from "@/components/dashboard/private-app-header";
 
 export const metadata: Metadata = {
   title: "Pause — Jerawat Hunter",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 export default function PausePage() {
   return (
     <main className="min-h-screen bg-[#f7f7f4] px-4 pb-10 pt-8 text-neutral-900 sm:px-6 sm:pt-12">
+      <PrivateAppHeader />
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
           <p className="text-sm font-semibold tracking-wide text-teal-800">

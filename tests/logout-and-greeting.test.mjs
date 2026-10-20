@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getUserDisplayName, getUserGreeting } from "../src/lib/user-greeting.ts";
 import { authConfig } from "../src/auth.config.ts";
@@ -38,7 +38,7 @@ test("3. getUserDisplayName mengembalikan null jika nama dan email tidak tersedi
 });
 
 // 2. Pengujian komponen DashboardUserHeader
-test("4. DashboardUserHeader menggunakan tombol merah, layout kanan, tanpa sapaan 'Halo', dan dialog konfirmasi", () => {
+test("4. DashboardUserHeader menyediakan navigasi sidebar responsif dan dialog logout", () => {
   const componentPath = resolve(process.cwd(), "src/components/dashboard/dashboard-user-header.tsx");
   const code = readFileSync(componentPath, "utf-8");
 
@@ -46,10 +46,27 @@ test("4. DashboardUserHeader menggunakan tombol merah, layout kanan, tanpa sapaa
   assert.ok(code.includes("bg-rose-700"), "Tombol logout harus menggunakan warna merah bg-rose-700");
   assert.ok(code.includes("text-white"), "Teks dan ikon tombol logout harus putih untuk kontras memadai");
   assert.ok(code.includes("hover:bg-rose-800"), "Harus memiliki state hover hover:bg-rose-800");
-  assert.ok(code.includes('aria-label="Keluar dari akun"'), "Harus memiliki aria-label pada tombol logout");
+  assert.ok(code.includes('aria-label={`Menu akun${displayName ? ` ${displayName}` : ""}`}'));
+  assert.ok(code.includes('aria-label="Menu akun"'));
+  assert.ok(code.includes("aria-expanded={accountOpen}"));
+  assert.ok(code.includes("aria-controls={accountMenuId}"));
+  assert.ok(code.includes("min-[360px]:w-auto sm:hidden"));
+  assert.ok(code.includes("max-[359px]:hidden"));
+  assert.ok(code.includes('document.addEventListener("pointerdown", handlePointerDown)'));
+  assert.ok(code.includes('document.addEventListener("keydown", handleKeyDown)'));
+  assert.ok(code.includes("Pengaturan"));
+  assert.ok(code.includes("Segera hadir"));
+  assert.ok(code.includes("disabled"));
+  assert.ok(code.includes("Logout"));
 
-  // Periksa posisi di sisi kanan dan nama tepat di sebelah kiri tombol Logout
-  assert.ok(code.includes("justify-end"), "Layout header harus berada di sisi kanan (justify-end)");
+  // Periksa aksesibilitas drawer dan prioritas logo pada mobile
+  assert.ok(code.includes('aria-label={sidebarOpen ? "Tutup navigasi" : "Buka navigasi"}'));
+  assert.ok(code.includes("aria-expanded={sidebarOpen}"));
+  assert.ok(code.includes("aria-controls={sidebarId}"));
+  assert.ok(code.includes("hidden shrink-0 text-base font-semibold"));
+  assert.ok(code.includes('src="/jawhan-logo.png"'), "Logo aset brand harus dipakai di header dan sidebar");
+  assert.ok(code.includes("object-contain"), "Logo harus mempertahankan proporsi");
+  assert.ok(code.includes("min-h-11"), "Kontrol header memiliki area sentuh minimal 44px");
   assert.ok(
     !code.includes("Halo,"),
     "Header pengguna tidak boleh menampilkan sapaan 'Halo,' sesuai keputusan desain"
@@ -62,6 +79,22 @@ test("4. DashboardUserHeader menggunakan tombol merah, layout kanan, tanpa sapaa
   // Periksa responsivitas (truncate dan min-w-0 agar nama panjang tidak mendorong tombol keluar viewport)
   assert.ok(code.includes("truncate"), "Harus menggunakan truncate untuk mencegah overflow teks di mobile");
   assert.ok(code.includes("min-w-0"), "Harus menggunakan min-w-0 untuk truncation yang aman");
+  assert.ok(code.includes('aria-label="Tutup sidebar"'));
+  assert.ok(code.includes('aria-modal="true"'));
+  assert.ok(code.includes('aria-label="Navigasi utama"'));
+  assert.ok(code.includes('pathname === "/picking"'));
+  assert.ok(code.includes('pathname === "/picking/analysis"'));
+  assert.ok(code.includes('pathname === "/resistance"'));
+  assert.ok(code.includes('pathname === "/"'));
+  assert.ok(code.includes('pathname === "/pause"'));
+  assert.ok(code.includes('active={pathname === "/"}'));
+  assert.ok(code.includes('active={pathname === "/pause"}'));
+  assert.ok(!code.includes("pathname.startsWith"));
+  assert.ok(code.includes("handleSidebarBackdropClick"), "Klik backdrop harus menutup drawer");
+  assert.ok(code.includes("closeSidebarForNavigation"), "Navigasi harus menutup drawer");
+  assert.ok(code.includes('href="/pause"'), "Sidebar Pause harus memakai route tombol Pause dashboard");
+  assert.ok(existsSync(resolve(process.cwd(), "public/jawhan-logo.png")));
+  assert.ok(code.includes("key={pathname}"), "Drawer harus disegarkan saat route berubah");
 
   // Periksa dialog konfirmasi
   assert.ok(code.includes('role="dialog"'), "Harus memiliki atribut role='dialog'");
@@ -99,7 +132,7 @@ test("5. Server action logoutUser memanfaatkan signOut resmi Auth.js dengan redi
 });
 
 // 4. Pengujian integrasi Dashboard dan arsitektur Suspense di src/app/page.tsx
-test("6. Dashboard Home membungkus DashboardUserHeaderSection dengan Suspense untuk mencegah uncached prerender error", () => {
+test("6. Semua halaman privat memakai header bersama dan halaman autentikasi tetap terpisah", () => {
   const pagePath = resolve(process.cwd(), "src/app/page.tsx");
   const code = readFileSync(pagePath, "utf-8");
 
@@ -107,34 +140,51 @@ test("6. Dashboard Home membungkus DashboardUserHeaderSection dengan Suspense un
     code.includes("export default function Home()"),
     "Home harus merupakan komponen sinkron agar static shell dapat diprerender"
   );
-  assert.ok(
-    code.includes("DashboardUserHeaderSection"),
-    "src/app/page.tsx harus memisahkan data fetching session ke dalam DashboardUserHeaderSection"
-  );
-  assert.ok(
-    code.includes("DashboardUserHeaderSkeleton"),
-    "src/app/page.tsx harus menyediakan fallback skeleton untuk header pengguna"
-  );
-  assert.ok(
-    code.includes("<Suspense fallback={<DashboardUserHeaderSkeleton />}>"),
-    "DashboardUserHeaderSection harus dibungkus dalam Suspense boundary"
-  );
-  assert.ok(
-    code.includes("const session = await auth();"),
-    "DashboardUserHeaderSection harus mengambil session dari auth()"
-  );
+  assert.ok(code.includes("<PrivateAppHeader />"), "Beranda harus memakai header bersama");
 
-  const headerPos = code.indexOf("<header");
-  const userHeaderPos = code.indexOf("DashboardUserHeaderSection");
+  const privateHeaderPath = resolve(
+    process.cwd(),
+    "src/components/dashboard/private-app-header.tsx"
+  );
+  const privateHeaderCode = readFileSync(privateHeaderPath, "utf-8");
+  assert.ok(privateHeaderCode.includes("<Suspense"));
+  assert.ok(privateHeaderCode.includes("async function AuthenticatedHeader()"));
+  assert.ok(privateHeaderCode.includes("const session = await auth();"));
+  assert.ok(privateHeaderCode.includes("<DashboardUserHeader user={session?.user} />"));
+
+  const privatePages = [
+    "src/app/page.tsx",
+    "src/app/pause/page.tsx",
+    "src/app/picking/page.tsx",
+    "src/app/picking/analysis/page.tsx",
+    "src/app/picking/new/page.tsx",
+    "src/app/resistance/page.tsx",
+  ];
+  for (const relativePath of privatePages) {
+    const pageCode = readFileSync(resolve(process.cwd(), relativePath), "utf-8");
+    assert.ok(pageCode.includes("PrivateAppHeader"), `${relativePath} harus memakai header bersama`);
+  }
+
+  const authPages = [
+    "src/app/login/page.tsx",
+    "src/app/register/page.tsx",
+    "src/app/forgot-password/page.tsx",
+    "src/app/reset-password/page.tsx",
+  ];
+  for (const relativePath of authPages) {
+    const pageCode = readFileSync(resolve(process.cwd(), relativePath), "utf-8");
+    assert.ok(!pageCode.includes("PrivateAppHeader"), `${relativePath} tidak boleh memakai header privat`);
+  }
+
+  const headerPos = code.indexOf("<PrivateAppHeader />");
   const appTitlePos = code.indexOf("JERAWAT HUNTER");
 
-  assert.ok(headerPos !== -1, "<header> harus ada");
-  assert.ok(userHeaderPos !== -1, "DashboardUserHeaderSection harus ada");
+  assert.ok(headerPos !== -1, "PrivateAppHeader harus ada");
   assert.ok(appTitlePos !== -1, "Teks JERAWAT HUNTER harus ada");
 
   assert.ok(
-    headerPos < userHeaderPos && userHeaderPos < appTitlePos,
-    "DashboardUserHeaderSection harus diletakkan di bagian paling atas di dalam <header> sebelum judul aplikasi"
+    headerPos < appTitlePos,
+    "Header bersama harus diletakkan sebelum konten beranda"
   );
 });
 

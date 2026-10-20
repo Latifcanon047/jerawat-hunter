@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getDefaultPickingAnalysis } from "@/actions/picking-analysis";
 import { PickingAnalysisView } from "@/components/picking-analysis/picking-analysis-view";
+import { PrivateAppHeader } from "@/components/dashboard/private-app-header";
 
 export const metadata: Metadata = {
   title: "Analisis Pola Picking — Jerawat Hunter",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default function PickingAnalysisPage() {
   return (
     <main className="min-h-screen bg-[#f7f7f4] px-4 pb-10 pt-8 text-neutral-900 sm:px-6 sm:pt-12">
+      <PrivateAppHeader />
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
           <Link

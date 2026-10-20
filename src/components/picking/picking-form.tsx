@@ -63,12 +63,15 @@ export function PickingForm(props: PickingFormProps) {
   const isEditing = props.mode === "edit";
   const isManualCreate =
     props.mode === "create" && props.source === "manual";
+  const isPauseCreate =
+    props.mode === "create" && props.source === "pause";
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const initialOccurredAtRef = useRef(occurredAt);
   const initialFormSnapshotRef = useRef<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(isEditing);
   const [manualModalOpen, setManualModalOpen] = useState(isManualCreate);
+  const [pauseModalOpen, setPauseModalOpen] = useState(isPauseCreate);
   const [discardConfirmationOpen, setDiscardConfirmationOpen] =
     useState(false);
   const discardConfirmedRef = useRef(false);
@@ -383,21 +386,23 @@ export function PickingForm(props: PickingFormProps) {
   function createFormContent() {
     return (
       <>
-        <div>
-          <p className="text-sm font-semibold text-teal-800">
-            CATATAN PICKING
-          </p>
-          <h2 id="picking-form-title" className="mt-2 text-xl font-semibold">
-            Apa yang terjadi?
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">
-            Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh
-            dilewati.
-          </p>
-        </div>
+        {!isPauseCreate && (
+          <div>
+            <p className="text-sm font-semibold text-teal-800">
+              CATATAN PICKING
+            </p>
+            <h2 id="picking-form-title" className="mt-2 text-xl font-semibold">
+              Apa yang terjadi?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh
+              dilewati.
+            </p>
+          </div>
+        )}
         {formFields}
 
-        {!isManualCreate && (
+        {!isManualCreate && !isPauseCreate && (
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="submit"
@@ -427,14 +432,18 @@ export function PickingForm(props: PickingFormProps) {
   const form = (
     <form
       ref={formRef}
-      id={isEditing || isManualCreate ? formId : undefined}
+      id={isEditing || isManualCreate || isPauseCreate ? formId : undefined}
       onSubmit={submit}
       className={
-        isEditing || isManualCreate
+        isEditing || isManualCreate || isPauseCreate
           ? "space-y-6"
           : "space-y-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
       }
-      aria-labelledby={isEditing || isManualCreate ? undefined : "picking-form-title"}
+      aria-labelledby={
+        isEditing || isManualCreate || isPauseCreate
+          ? undefined
+          : "picking-form-title"
+      }
     >
       {isEditing || isManualCreate ? (
         <fieldset
@@ -587,6 +596,41 @@ export function PickingForm(props: PickingFormProps) {
           </p>
         </Modal>
       </>
+    );
+  }
+
+  if (isPauseCreate) {
+    return (
+      <Modal
+        isOpen={pauseModalOpen}
+        title="Catat kejadian picking"
+        description="Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."
+        closeDisabled={pending}
+        onRequestClose={() => setPauseModalOpen(false)}
+        onClosed={props.onCancel}
+        footer={
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setPauseModalOpen(false)}
+              disabled={pending}
+              className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+            >
+              {saved ? "Kembali" : "Batal"}
+            </button>
+            <button
+              type="submit"
+              form={formId}
+              disabled={pending || saved}
+              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+            >
+              {pending ? "Menyimpan..." : "Simpan catatan"}
+            </button>
+          </div>
+        }
+      >
+        {form}
+      </Modal>
     );
   }
 

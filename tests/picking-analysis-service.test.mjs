@@ -484,30 +484,31 @@ test("12. Validasi menolak input invalid sebelum query dikirim ke database", asy
   assert.equal(repo.queriedUserIds.length, 0);
 });
 
-// 13. Tombol Dashboard mengarah ke /picking/analysis
-test("13. Tombol Dashboard Analisis Pola Picking mengarah ke /picking/analysis dan berada setelah Buka riwayat picking", () => {
-  const dashboardPath = resolve("src/components/dashboard/dashboard-home.tsx");
-  const content = readFileSync(dashboardPath, "utf-8");
+// 13. Sidebar navigasi mengarah ke /picking/analysis
+test("13. Menu sidebar Analisis Pola Picking mengarah ke /picking/analysis dalam urutan yang tepat", () => {
+  const sidebarPath = resolve("src/components/dashboard/dashboard-user-header.tsx");
+  const content = readFileSync(sidebarPath, "utf-8");
 
-  // Check link exists with href="/picking/analysis"
   assert.ok(content.includes('href="/picking/analysis"'));
   assert.ok(content.includes("Analisis Pola Picking"));
 
-  // Check relative position: /picking -> /picking/analysis -> /resistance
+  const dashboardIndex = content.indexOf('href="/"');
+  const pauseIndex = content.indexOf('href="/pause"');
   const pickingIndex = content.indexOf('href="/picking"');
   const analysisIndex = content.indexOf('href="/picking/analysis"');
   const resistanceIndex = content.indexOf('href="/resistance"');
 
-  assert.ok(pickingIndex !== -1, "Tombol /picking harus ada");
-  assert.ok(analysisIndex !== -1, "Tombol /picking/analysis harus ada");
-  assert.ok(resistanceIndex !== -1, "Tombol /resistance harus ada");
+  assert.ok(dashboardIndex !== -1, "Menu / harus ada");
+  assert.ok(pauseIndex !== -1, "Menu /pause harus ada");
+  assert.ok(pickingIndex !== -1, "Menu /picking harus ada");
+  assert.ok(analysisIndex !== -1, "Menu /picking/analysis harus ada");
+  assert.ok(resistanceIndex !== -1, "Menu /resistance harus ada");
   assert.ok(
-    pickingIndex < analysisIndex,
-    "Tombol /picking/analysis harus berada setelah tombol /picking"
-  );
-  assert.ok(
-    analysisIndex < resistanceIndex,
-    "Tombol /picking/analysis harus berada sebelum tombol /resistance"
+    dashboardIndex < pauseIndex &&
+      pauseIndex < pickingIndex &&
+      pickingIndex < analysisIndex &&
+      analysisIndex < resistanceIndex,
+    "Menu sidebar harus mengikuti urutan dashboard, Pause, picking, analisis, lalu keberhasilan"
   );
 });
 

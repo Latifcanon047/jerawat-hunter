@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PickingCreateForm } from "@/components/picking/picking-create-form";
+import { PrivateAppHeader } from "@/components/dashboard/private-app-header";
 
 export const metadata: Metadata = {
   title: "Catat picking — Jerawat Hunter",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 export default function NewPickingPage() {
   return (
     <main className="min-h-screen bg-[#f7f7f4] px-4 pb-10 pt-8 text-neutral-900 sm:px-6 sm:pt-12">
+      <PrivateAppHeader />
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
           <Link

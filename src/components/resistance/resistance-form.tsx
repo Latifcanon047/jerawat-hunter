@@ -68,6 +68,7 @@ export function ResistanceForm(props: ResistanceFormProps) {
   const [error, setError] = useState("");
   const isEditing = props.mode === "edit";
   const isStandalone = props.mode === "standalone";
+  const isPause = props.mode === "pause";
   const formId = useId();
   const initialFormSnapshotRef = useRef(
     createFormSnapshot(
@@ -80,6 +81,7 @@ export function ResistanceForm(props: ResistanceFormProps) {
   );
   const [editModalOpen, setEditModalOpen] = useState(isEditing);
   const [standaloneModalOpen, setStandaloneModalOpen] = useState(isStandalone);
+  const [pauseModalOpen, setPauseModalOpen] = useState(isPause);
   const [discardConfirmationOpen, setDiscardConfirmationOpen] =
     useState(false);
   const discardConfirmedRef = useRef(false);
@@ -204,16 +206,20 @@ export function ResistanceForm(props: ResistanceFormProps) {
 
   const form = (
     <form
-      id={isEditing || isStandalone ? formId : undefined}
+      id={isEditing || isStandalone || isPause ? formId : undefined}
       onSubmit={submit}
       className={
-        isEditing || isStandalone
+        isEditing || isStandalone || isPause
           ? "space-y-5"
           : "space-y-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7"
       }
-      aria-labelledby={isEditing || isStandalone ? undefined : "resistance-form-title"}
+      aria-labelledby={
+        isEditing || isStandalone || isPause
+          ? undefined
+          : "resistance-form-title"
+      }
     >
-      {!isStandalone && (
+      {!isStandalone && !isPause && (
         <div>
           <p className="text-sm font-semibold text-teal-800">
             CATATAN KEBERHASILAN
@@ -296,27 +302,6 @@ export function ResistanceForm(props: ResistanceFormProps) {
         </p>
       )}
 
-      {!isEditing && !isStandalone && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {!saved && (
-            <button
-              type="submit"
-              disabled={pending}
-              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {pending ? "Menyimpan..." : "Konfirmasi & simpan"}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={props.onCancel}
-            disabled={pending}
-            className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saved ? "Selesai" : "Batal"}
-          </button>
-        </div>
-      )}
     </form>
   );
 
@@ -478,6 +463,41 @@ export function ResistanceForm(props: ResistanceFormProps) {
           </p>
         </Modal>
       </>
+    );
+  }
+
+  if (props.mode === "pause") {
+    return (
+      <Modal
+        isOpen={pauseModalOpen}
+        title="Catat keberhasilan"
+        description="Waktu kejadian WIB wajib diisi. Durasi dan catatan boleh dikosongkan."
+        closeDisabled={pending}
+        onRequestClose={() => setPauseModalOpen(false)}
+        onClosed={props.onCancel}
+        footer={
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setPauseModalOpen(false)}
+              disabled={pending}
+              className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              form={formId}
+              disabled={pending || saved}
+              className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+            >
+              {pending ? "Menyimpan..." : "Konfirmasi & simpan"}
+            </button>
+          </div>
+        }
+      >
+        {form}
+      </Modal>
     );
   }
 
