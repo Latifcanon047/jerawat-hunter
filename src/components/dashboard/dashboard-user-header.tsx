@@ -161,7 +161,7 @@ function DashboardUserHeaderContent({
 
   return (
     <>
-      <header className="mx-auto mb-6 flex min-h-11 w-full max-w-5xl items-center gap-1 border-b border-neutral-200/80 pb-3 sm:gap-2">
+      <header className="sticky top-0 z-40 mx-auto mb-4 flex min-h-11 w-full max-w-5xl items-center gap-1 border-b border-neutral-200/80 bg-[#f7f7f4] pb-2 sm:gap-2">
         <button
           ref={burgerRef}
           type="button"

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { getDefaultPickingAnalysis } from "@/actions/picking-analysis";
@@ -13,17 +12,11 @@ export const metadata: Metadata = {
 
 export default function PickingAnalysisPage() {
   return (
-    <main className="min-h-screen bg-[#f7f7f4] px-4 pb-10 pt-8 text-neutral-900 sm:px-6 sm:pt-12">
+    <main className="min-h-screen bg-[#f7f7f4] px-4 pb-10 pt-4 text-neutral-900 sm:px-6 sm:pt-6">
       <PrivateAppHeader />
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-teal-800 hover:underline"
-          >
-            ← Kembali ke beranda
-          </Link>
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-semibold tracking-tight">
             Analisis Pola Picking
           </h1>
           <p className="mt-2 text-sm leading-6 text-neutral-600">

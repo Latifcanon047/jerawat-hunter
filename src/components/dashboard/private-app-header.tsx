@@ -7,7 +7,7 @@ export function PrivateAppHeader() {
     <Suspense
       fallback={
         <div
-          className="mx-auto mb-6 h-11 w-full max-w-5xl border-b border-neutral-200/80"
+          className="mx-auto mb-4 h-11 w-full max-w-5xl border-b border-neutral-200/80"
           aria-hidden="true"
         />
       }
