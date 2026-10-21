@@ -280,20 +280,15 @@ function DashboardUserHeaderContent({
         className="app-drawer fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(20rem,calc(100vw-2rem))] max-w-full flex-col overflow-y-auto overscroll-contain bg-white p-5 text-neutral-900 shadow-2xl"
       >
         <div className="mb-8 flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex items-center">
             <Image
-              src="/jawhan-logo.png"
-              alt=""
+              src="/jawhan-logo2.png"
+              alt="Jawhan"
               width={612}
               height={408}
-              className="h-10 w-[60px] shrink-0 object-contain"
+              priority
+              className="h-16 w-[96px] shrink-0 object-contain sm:h-20 sm:w-[120px]"
             />
-            <h2
-              id={`${sidebarId}-title`}
-              className="truncate font-[family-name:var(--font-geist-sans)] text-lg font-bold tracking-[-0.04em] text-teal-800"
-            >
-              Jawhan
-            </h2>
           </div>
           <button
             ref={closeSidebarRef}

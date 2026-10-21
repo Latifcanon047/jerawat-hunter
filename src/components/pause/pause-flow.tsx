@@ -29,9 +29,7 @@ import {
   createPauseStartRequest,
   type PauseStartRequest,
 } from "@/lib/pause-start-request";
-import {
-  PAUSE_REMINDER_AUDIOS,
-} from "@/lib/pause-reminder-preferences";
+import { PAUSE_REMINDER_AUDIOS } from "@/lib/pause-reminder-preferences";
 import {
   detectPauseNotificationPlatform,
   getPauseNotificationSettingsGuide,
@@ -101,7 +99,10 @@ function Notice({
   }[kind];
 
   return (
-    <div role={kind === "error" ? "alert" : "status"} className={`rounded-xl border p-4 text-sm leading-6 ${colors}`}>
+    <div
+      role={kind === "error" ? "alert" : "status"}
+      className={`rounded-xl border p-4 text-sm leading-6 ${colors}`}
+    >
       {children}
     </div>
   );
@@ -130,37 +131,39 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
       : detectPauseNotificationPlatform(
           navigator.userAgent,
           navigator.platform,
-          navigator.maxTouchPoints
+          navigator.maxTouchPoints,
         );
   const [pauseState, setPauseState] = useState<PauseStateData | null>(
-    initialResult.success ? initialResult.data : null
+    initialResult.success ? initialResult.data : null,
   );
   const [pageError, setPageError] = useState(
-    initialResult.success ? "" : initialResult.error
+    initialResult.success ? "" : initialResult.error,
   );
   const [pauseStateVerified, setPauseStateVerified] = useState(
-    initialResult.success
+    initialResult.success,
   );
   const [selectedDuration, setSelectedDuration] = useState<number | null>(60);
   const [customDuration, setCustomDuration] = useState("");
   const [session, setSession] = useState<PauseSessionData | null>(
-    initialResult.success ? initialResult.data.session : null
+    initialResult.success ? initialResult.data.session : null,
   );
-  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(() => {
-    const initialSession = initialResult.success
-      ? initialResult.data.session
-      : null;
-    return initialSession && !initialSession.endedAt
-      ? getPauseRemainingSeconds(
-          initialSession.startedAt,
-          initialSession.durationSecs
-        )
-      : 0;
-  });
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(
+    () => {
+      const initialSession = initialResult.success
+        ? initialResult.data.session
+        : null;
+      return initialSession && !initialSession.endedAt
+        ? getPauseRemainingSeconds(
+            initialSession.startedAt,
+            initialSession.durationSecs,
+          )
+        : 0;
+    },
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [failedStartDuration, setFailedStartDuration] = useState<number | null>(
-    null
+    null,
   );
   const [completed, setCompleted] = useState<CompletedOutcome | null>(null);
   const [resistanceFormSessionId, setResistanceFormSessionId] = useState<
@@ -177,46 +180,51 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
   const startRequestRef = useRef<PauseStartRequest | null>(null);
   const pauseEntryNeedsReconciliationRef = useRef(false);
 
-  const updateSession = useCallback((nextSession: PauseSessionData | null) => {
-    const previousSession = sessionRef.current;
-    if (
-      !nextSession ||
-      nextSession.endedAt ||
-      previousSession?.id !== nextSession.id
-    ) {
-      deadlineSyncRef.current = null;
-    }
-    sessionRef.current = nextSession;
-    setSession(nextSession);
-    setReminderSession(nextSession);
-    setRemainingSeconds(
-      nextSession && !nextSession.endedAt
-        ? getPauseRemainingSeconds(
-            nextSession.startedAt,
-            nextSession.durationSecs
-          )
-        : 0
-    );
-  }, [setReminderSession]);
+  const updateSession = useCallback(
+    (nextSession: PauseSessionData | null) => {
+      const previousSession = sessionRef.current;
+      if (
+        !nextSession ||
+        nextSession.endedAt ||
+        previousSession?.id !== nextSession.id
+      ) {
+        deadlineSyncRef.current = null;
+      }
+      sessionRef.current = nextSession;
+      setSession(nextSession);
+      setReminderSession(nextSession);
+      setRemainingSeconds(
+        nextSession && !nextSession.endedAt
+          ? getPauseRemainingSeconds(
+              nextSession.startedAt,
+              nextSession.durationSecs,
+            )
+          : 0,
+      );
+    },
+    [setReminderSession],
+  );
 
-  const runBusyAction = useCallback(async <T,>(
-    action: () => Promise<T>,
-    onSuccess: (result: T) => void
-  ) => {
-    if (pendingRef.current) return;
-    pendingRef.current = true;
-    setBusy(true);
-    setError("");
-    try {
-      const result = await action();
-      onSuccess(result);
-    } catch {
-      setError("Tidak dapat terhubung ke server. Periksa koneksi lalu coba lagi.");
-    } finally {
-      pendingRef.current = false;
-      setBusy(false);
-    }
-  }, []);
+  const runBusyAction = useCallback(
+    async <T,>(action: () => Promise<T>, onSuccess: (result: T) => void) => {
+      if (pendingRef.current) return;
+      pendingRef.current = true;
+      setBusy(true);
+      setError("");
+      try {
+        const result = await action();
+        onSuccess(result);
+      } catch {
+        setError(
+          "Tidak dapat terhubung ke server. Periksa koneksi lalu coba lagi.",
+        );
+      } finally {
+        pendingRef.current = false;
+        setBusy(false);
+      }
+    },
+    [],
+  );
 
   const refreshPauseState = useCallback(async () => {
     const requestId = refreshGuardRef.current!.begin();
@@ -264,7 +272,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
       if (refreshGuardRef.current!.isCurrent(requestId)) {
         setPauseStateVerified(false);
         setPageError(
-          "Status Pause belum dapat diperbarui. Silakan coba muat ulang status."
+          "Status Pause belum dapat diperbarui. Silakan coba muat ulang status.",
         );
       }
     }
@@ -296,11 +304,13 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
       const activeSession = sessionRef.current;
       const deadlineMs = getPauseDeadlineMs(
         expectedSession.startedAt,
-        expectedSession.durationSecs
+        expectedSession.durationSecs,
       );
       if (deadlineMs === null) {
         setRemainingSeconds(null);
-        setError("Waktu sesi tidak dapat diverifikasi. Muat ulang status sebelum melanjutkan.");
+        setError(
+          "Waktu sesi tidak dapat diverifikasi. Muat ulang status sebelum melanjutkan.",
+        );
         return;
       }
       if (
@@ -330,14 +340,14 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           }
           setPauseStateVerified(true);
           updateSession(result.data.session);
-        }
+        },
       ).finally(() => {
         if (deadlineSyncInFlightRef.current === requestKey) {
           deadlineSyncInFlightRef.current = null;
         }
       });
     },
-    [runBusyAction, updateSession]
+    [runBusyAction, updateSession],
   );
 
   useEffect(() => {
@@ -349,7 +359,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
     const updateRemaining = () => {
       const remaining = getPauseRemainingSeconds(
         session.startedAt,
-        session.durationSecs
+        session.durationSecs,
       );
       setRemainingSeconds(remaining);
       if (remaining === null) return;
@@ -370,7 +380,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
       durationSecs,
       retry,
       startRequestRef.current,
-      () => crypto.randomUUID()
+      () => crypto.randomUUID(),
     );
     startRequestRef.current = request;
     setFailedStartDuration(durationSecs);
@@ -406,7 +416,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           pickingFollowUps: previous?.pickingFollowUps ?? [],
         }));
         updateSession(result.data.session);
-      }
+      },
     );
   }
 
@@ -431,7 +441,9 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
         }
         refreshGuardRef.current?.invalidate();
         if (result.data.session.outcome !== outcome) {
-          setError("Hasil sesi belum terkonfirmasi oleh server. Silakan coba lagi.");
+          setError(
+            "Hasil sesi belum terkonfirmasi oleh server. Silakan coba lagi.",
+          );
           return;
         }
         setPauseStateVerified(true);
@@ -445,25 +457,30 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
         setPauseState((previous) =>
           previous
             ? { ...previous, session: null }
-            : { session: null, pickingFollowUps: [] }
+            : { session: null, pickingFollowUps: [] },
         );
         if (outcome === "PICKED" && result.data.needsPickingDetails) {
           setPauseState((previous) => ({
             session: null,
             pickingFollowUps: [
               ...(previous?.pickingFollowUps ?? []).filter(
-                (item) => item.id !== finished.session.id
+                (item) => item.id !== finished.session.id,
               ),
               finished.session,
             ],
           }));
         }
-      }
+      },
     );
   }
 
   function endEarly() {
-    if (!session || !window.confirm("Akhiri Pause sekarang? Kamu bisa memilih hasil setelahnya.")) {
+    if (
+      !session ||
+      !window.confirm(
+        "Akhiri Pause sekarang? Kamu bisa memilih hasil setelahnya.",
+      )
+    ) {
       return;
     }
 
@@ -481,7 +498,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
         }
         setPauseStateVerified(true);
         updateSession(result.data.session);
-      }
+      },
     );
   }
 
@@ -499,19 +516,17 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
   }
 
   const durationToStart =
-    customDuration.trim() === ""
-      ? selectedDuration
-      : Number(customDuration);
+    customDuration.trim() === "" ? selectedDuration : Number(customDuration);
   const sessionIsReadyForOutcome =
     session?.endedAt !== null && session?.endedAt !== undefined;
   const visibleCompleted = getVisibleCompletedPauseResult(
     pauseStateVerified,
     session,
-    completed
+    completed,
   );
   const selectedReminderAudio =
     PAUSE_REMINDER_AUDIOS.find(
-      (audio) => audio.id === reminderPreferences.selectedAudio
+      (audio) => audio.id === reminderPreferences.selectedAudio,
     ) ?? PAUSE_REMINDER_AUDIOS[0];
   return (
     <div className="space-y-5">
@@ -557,7 +572,9 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
 
       {visibleCompleted ? (
         <section className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7">
-          <Notice kind="success">{resultMessage(visibleCompleted.outcome)}</Notice>
+          <Notice kind="success">
+            {resultMessage(visibleCompleted.outcome)}
+          </Notice>
           {visibleCompleted.outcome === "PICKED" &&
             visibleCompleted.needsPickingDetails && (
               <div className="space-y-3">
@@ -569,7 +586,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                   type="button"
                   onClick={() =>
                     router.push(
-                      `/picking/new?pauseSessionId=${encodeURIComponent(visibleCompleted.session.id)}`
+                      `/picking/new?pauseSessionId=${encodeURIComponent(visibleCompleted.session.id)}`,
                     )
                   }
                   className="min-h-12 w-full rounded-xl border border-teal-800 px-5 font-semibold text-teal-900 hover:bg-teal-50"
@@ -579,6 +596,23 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
               </div>
             )}
           {visibleCompleted.outcome === "STILL_RESISTING" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={goToStart}
+                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900"
+              >
+                Ambil jeda lagi
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+              >
+                Kembali ke beranda
+              </button>
+            </div>
+          ) : visibleCompleted.outcome === "SUCCEEDED" ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
@@ -642,7 +676,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                 setPauseState((previous) =>
                   previous
                     ? { ...previous, session: null }
-                    : { session: null, pickingFollowUps: [] }
+                    : { session: null, pickingFollowUps: [] },
                 );
                 setPauseStateVerified(true);
               }}
@@ -726,8 +760,8 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           ) : (
             <>
               <p className="text-sm leading-6 text-neutral-600">
-                Jauhkan tangan dari kulit jika bisa. Tarik napas perlahan,
-                lalu hembuskan. Kamu tidak perlu memutuskan apa pun sekarang.
+                Jauhkan tangan dari kulit jika bisa. Tarik napas perlahan, lalu
+                hembuskan. Kamu tidak perlu memutuskan apa pun sekarang.
               </p>
               <div
                 aria-label={`Sisa waktu ${formatTime(remainingSeconds)}`}
@@ -752,13 +786,12 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
       ) : (
         <section className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7">
           <div>
-            <p className="text-sm font-semibold text-teal-800">PAUSE</p>
             <h2 className="mt-2 text-xl font-semibold">
               Beri dirimu waktu sejenak
             </h2>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Pilih durasi yang terasa pas. Kamu bisa mengakhiri sesi lebih
-              awal kapan saja.
+              Pilih durasi yang terasa pas. Kamu bisa mengakhiri sesi lebih awal
+              kapan saja.
             </p>
           </div>
 
@@ -767,7 +800,9 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
               <button
                 key={preset.seconds}
                 type="button"
-                aria-pressed={selectedDuration === preset.seconds && !customDuration}
+                aria-pressed={
+                  selectedDuration === preset.seconds && !customDuration
+                }
                 onClick={() => chooseDuration(preset.seconds)}
                 className={`min-h-12 rounded-xl border px-4 font-semibold ${
                   selectedDuration === preset.seconds && !customDuration
@@ -807,9 +842,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           <button
             type="button"
             disabled={
-              busy ||
-              failedStartDuration !== null ||
-              durationToStart === null
+              busy || failedStartDuration !== null || durationToStart === null
             }
             onClick={() => {
               if (durationToStart !== null) void beginPause(durationToStart);
@@ -835,8 +868,8 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           </h2>
           <p className="mt-2 text-sm leading-6 text-neutral-600">
             Pengingat dicoba saat waktu Pause tercapai selama halaman dan
-            browser masih berjalan. Browser atau perangkat dapat membatasi
-            audio maupun notifikasi.
+            browser masih berjalan. Browser atau perangkat dapat membatasi audio
+            maupun notifikasi.
           </p>
         </div>
 
@@ -866,10 +899,12 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           <select
             id="pause-reminder-audio"
             value={reminderPreferences.selectedAudio}
-            disabled={!reminderPreferencesReady || !reminderPreferences.audioEnabled}
+            disabled={
+              !reminderPreferencesReady || !reminderPreferences.audioEnabled
+            }
             onChange={(event) => {
               const selected = PAUSE_REMINDER_AUDIOS.find(
-                (audio) => audio.id === event.target.value
+                (audio) => audio.id === event.target.value,
               );
               if (selected) {
                 saveReminderPreferences({
@@ -886,30 +921,6 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
               </option>
             ))}
           </select>
-          <p className="text-xs leading-5 text-neutral-500">
-            Audio: {selectedReminderAudio.creator} ·{" "}
-            {selectedReminderAudio.sourceUrl ? (
-              <a
-                href={selectedReminderAudio.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                sumber
-              </a>
-            ) : (
-              "sintesis orisinal"
-            )}{" "}
-            ·{" "}
-            <a
-              href={selectedReminderAudio.licenseUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              CC0 1.0
-            </a>
-          </p>
         </div>
 
         {!reminderStorageAvailable && (
@@ -930,13 +941,13 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                   ? "Browser ini tidak mendukung Service Worker yang diperlukan untuk notifikasi sistem. Pengingat audio tetap dapat digunakan."
                   : notificationPermission === "ios-unsupported"
                     ? "Notifikasi web di iPhone/iPad memerlukan web app Home Screen yang dikonfigurasi. Jerawat Hunter belum memiliki konfigurasi web app/manifest tersebut, jadi notifikasi belum tersedia di perangkat ini."
-              : notificationPermission === "granted"
-                  ? "Izin notifikasi telah diberikan. Pengaturan browser atau sistem operasi tetap dapat membatasi tampilnya notifikasi."
-                  : notificationPermission === "denied"
-                    ? "Izin notifikasi ditolak. Buka pengaturan izin situs di browser untuk mengaktifkannya."
-                    : notificationPermission === "error"
-                      ? "Status izin notifikasi tidak dapat dibaca."
-                      : "Izin notifikasi belum diberikan."}
+                    : notificationPermission === "granted"
+                      ? "Izin notifikasi telah diberikan. Pengaturan browser atau sistem operasi tetap dapat membatasi tampilnya notifikasi."
+                      : notificationPermission === "denied"
+                        ? "Izin notifikasi ditolak. Buka pengaturan izin situs di browser untuk mengaktifkannya."
+                        : notificationPermission === "error"
+                          ? "Status izin notifikasi tidak dapat dibaca."
+                          : "Izin notifikasi belum diberikan."}
           </p>
           {notificationPermission === "default" && (
             <button
@@ -949,16 +960,16 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
           )}
           {(notificationPermission === "denied" ||
             notificationPermission === "ios-unsupported") && (
-              <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-                <ol className="list-decimal space-y-1 pl-5">
-                  {getPauseNotificationSettingsGuide(
-                    notificationPlatform
-                  ).map((step) => (
+            <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+              <ol className="list-decimal space-y-1 pl-5">
+                {getPauseNotificationSettingsGuide(notificationPlatform).map(
+                  (step) => (
                     <li key={step}>{step}</li>
-                  ))}
-                </ol>
-              </div>
-            )}
+                  ),
+                )}
+              </ol>
+            </div>
+          )}
         </div>
 
         {notificationStatus !== "idle" && (
@@ -970,7 +981,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                 : notificationStatus === "denied"
                   ? "Notifikasi tidak dapat ditampilkan karena izin ditolak."
                   : notificationStatus === "unsupported"
-                        ? "Notifikasi tidak dicoba karena salah satu API yang diperlukan tidak tersedia."
+                    ? "Notifikasi tidak dicoba karena salah satu API yang diperlukan tidak tersedia."
                     : notificationStatus === "already-processed"
                       ? "Pengingat untuk sesi ini sudah dicoba sebelumnya."
                       : notificationStatus === "failed"
@@ -992,7 +1003,7 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                       ? "Audio dihentikan."
                       : "Audio pengingat dinonaktifkan."}
             </p>
-            {audioStatus !== "playing" && (
+            {audioStatus !== "playing" &&
               reminderPreferences.audioEnabled &&
               (audioStatus === "failed" ||
                 audioStatus === "disabled" ||
@@ -1004,14 +1015,16 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
                 >
                   Putar suara
                 </button>
-              )
-            )}
+              )}
           </div>
         )}
       </section>
 
       {pauseStateVerified && pauseState?.pickingFollowUps.length ? (
-        <section className="space-y-3" aria-labelledby="picking-follow-up-title">
+        <section
+          className="space-y-3"
+          aria-labelledby="picking-follow-up-title"
+        >
           <h2
             id="picking-follow-up-title"
             className="text-sm font-semibold text-neutral-700"
@@ -1025,14 +1038,13 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
             >
               <p className="text-sm leading-6 text-neutral-700">
                 Detail picking dari sesi{" "}
-                {formatPauseStartedAt(followUp.startedAt)}{" "}
-                belum dicatat.
+                {formatPauseStartedAt(followUp.startedAt)} belum dicatat.
               </p>
               <button
                 type="button"
                 onClick={() =>
                   router.push(
-                    `/picking/new?pauseSessionId=${encodeURIComponent(followUp.id)}`
+                    `/picking/new?pauseSessionId=${encodeURIComponent(followUp.id)}`,
                   )
                 }
                 className="mt-3 min-h-11 rounded-xl border border-teal-800 px-4 font-semibold text-teal-900 hover:bg-teal-50"
@@ -1044,7 +1056,10 @@ export function PauseFlow({ initialResult }: { initialResult: InitialResult }) {
         </section>
       ) : null}
 
-      <nav aria-label="Navigasi utama" className="border-t border-neutral-200 pt-4">
+      <nav
+        aria-label="Navigasi utama"
+        className="border-t border-neutral-200 pt-4"
+      >
         <Link
           href="/"
           className="mr-2 inline-flex min-h-11 items-center rounded-lg px-3 font-semibold text-teal-900 hover:bg-teal-50"

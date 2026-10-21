@@ -17,7 +17,7 @@ export default function PausePage() {
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-8">
           <p className="text-sm font-semibold tracking-wide text-teal-800">
-            JERAWAT HUNTER
+            PAUSE
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
             Ambil jeda. Kamu tidak sendirian.

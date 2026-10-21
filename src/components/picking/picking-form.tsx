@@ -104,11 +104,18 @@ export function PickingForm(props: PickingFormProps) {
   }
 
   useEffect(() => {
-    if (props.mode !== "create" || !saved || isManualCreate) return;
+    if (
+      props.mode !== "create" ||
+      !saved ||
+      isManualCreate ||
+      isPauseCreate
+    ) {
+      return;
+    }
 
     const timeout = window.setTimeout(() => router.replace("/"), 1800);
     return () => window.clearTimeout(timeout);
-  }, [isManualCreate, props.mode, router, saved]);
+  }, [isManualCreate, isPauseCreate, props.mode, router, saved]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -635,31 +642,59 @@ export function PickingForm(props: PickingFormProps) {
           isOpen={pauseModalOpen}
           title="Catat kejadian picking"
           description="Pilih jenis kejadian dan waktu kejadian WIB. Detail lain boleh dilewati."
-          closeDisabled={pending}
+          closeDisabled={pending || saved}
           onRequestClose={requestPauseClose}
           onClosed={props.onCancel}
           footer={
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={requestPauseClose}
-                disabled={pending}
-                className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
-              >
-                {saved ? "Kembali" : "Batal"}
-              </button>
-              <button
-                type="submit"
-                form={formId}
-                disabled={pending || saved}
-                className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
-              >
-                {pending ? "Menyimpan..." : "Simpan catatan"}
-              </button>
-            </div>
+            saved ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50"
+                >
+                  Kembali ke Dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/pause")}
+                  className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900"
+                >
+                  Mulai Pause Lagi
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={requestPauseClose}
+                  disabled={pending}
+                  className="min-h-12 rounded-xl border border-neutral-300 px-5 font-semibold hover:bg-neutral-50 disabled:opacity-60"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  form={formId}
+                  disabled={pending}
+                  className="min-h-12 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
+                >
+                  {pending ? "Menyimpan..." : "Simpan catatan"}
+                </button>
+              </div>
+            )
           }
         >
-          {form}
+          {saved ? (
+            <p
+              role="status"
+              className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950"
+            >
+              Catatan picking berhasil disimpan.
+            </p>
+          ) : (
+            form
+          )}
         </Modal>
         <Modal
           isOpen={discardConfirmationOpen}
