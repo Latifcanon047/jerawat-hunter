@@ -317,6 +317,13 @@ function DashboardUserHeaderContent({
               Pause
             </SidebarLink>
             <SidebarLink
+              href="/acne-tracking"
+              active={pathname === "/acne-tracking"}
+              onNavigate={closeSidebarForNavigation}
+            >
+              Pemantauan Jerawat
+            </SidebarLink>
+            <SidebarLink
               href="/picking"
               active={pathname === "/picking"}
               onNavigate={closeSidebarForNavigation}

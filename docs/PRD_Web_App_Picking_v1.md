@@ -213,6 +213,25 @@ Halaman **Analisis Pola Picking** tersedia melalui Dashboard pada `/picking/anal
 
 Analisis menggunakan `occurredAt` sebagai waktu kejadian dan tidak memasukkan catatan dengan `occurredAt = null`. Analisis dibatasi pada data picking; belum tersedia hubungan statistik antara kekuatan dorongan dan hasil menahan/picking, agregasi gabungan dengan data Resistance, maupun ringkasan pemicu teratas langsung di Dashboard. Data yang tidak diisi tetap dibedakan dari pilihan yang dicatat.
 
+### G. Pemantauan Jerawat
+
+**Tujuan:** Membantu pengguna mencatat dan memantau perkembangan setiap jerawat atau koreng secara individual, termasuk perjalanan menuju sembuh, dengan bahasa yang tenang dan tidak menghakimi.
+
+**Kebutuhan produk**
+- Halaman `/acne-tracking` mengikuti navigasi aplikasi yang sudah ada.
+- Catatan dibagi menjadi **Aktif** dan **Riwayat sembuh**. Satu catatan mewakili satu jerawat atau koreng. Daftar menampilkan nama, lokasi, tanggal mulai, dan status.
+- Membuat catatan memerlukan nama dan satu lokasi. Tanggal mulai wajib diisi, nilai awalnya tanggal saat ini, dan tanggal di masa depan tidak diperbolehkan. Foto bersifat opsional.
+- Lokasi yang disepakati untuk fitur ini terbatas pada sepuluh pilihan wajah: dahi, pelipis kiri, pelipis kanan, hidung, pipi kiri, pipi kanan, sekitar mulut, dagu, rahang kiri, dan rahang kanan. Leher tidak termasuk dalam keputusan ini; lokasi tambahan memerlukan keputusan pengguna. PRD sebelumnya belum menetapkan pilihan lokasi untuk Pemantauan Jerawat.
+- Pengguna dapat membuka detail, mengedit nama/lokasi/tanggal mulai termasuk pada catatan sembuh, dan menghapus catatan setelah konfirmasi. Edit metadata catatan `HEALED` tidak mengaktifkannya kembali atau mengubah tanggal sembuh.
+- Pengguna dapat menandai catatan aktif sebagai sembuh. Catatan berpindah ke Riwayat sembuh; tanggal mulai, status, tanggal sembuh, dan foto yang masih terkait tetap konsisten.
+- Jika foto disertakan, pengguna menandai tepat satu titik jerawat dengan lingkaran merah. Tanpa foto tidak ada penanda. Penggantian foto memerlukan penanda baru. Foto dapat ditinjau dari detail dan diperbesar sesuai kemampuan UI yang disetujui.
+- Foto merupakan aset privat: akses dan operasi foto hanya untuk pengguna yang berwenang atas catatan. Penghapusan atau penggantian catatan harus mengikuti lifecycle dan cleanup aset yang dirancang; perilaku yang belum dipastikan tidak dianggap sebagai janji produk.
+
+**Kebutuhan keandalan (catatan teknis, bukan detail yang ditampilkan kepada pengguna)**
+- Create dan operasi foto memerlukan idempotency agar pengiriman ulang permintaan yang sama tidak membuat catatan atau operasi foto ganda.
+- Server memvalidasi input dan memverifikasi autentikasi serta kepemilikan data pada setiap operasi.
+- Kegagalan atau status upload/cleanup yang belum pasti harus ditangani tanpa menyatakan aset berhasil dihapus atau ditautkan sebelum statusnya dapat dipastikan.
+
 ## 4. Prinsip UI/UX
 
 - Minimalis dan bersih.
@@ -232,15 +251,14 @@ Analisis menggunakan `occurredAt` sebagai waktu kejadian dan tidak memasukkan ca
 - Setiap catatan, keberhasilan, dan statistik terikat pada pemiliknya.
 - API harus memverifikasi kepemilikan data di server, bukan hanya menyembunyikan data di UI.
 - Pengguna tidak boleh membaca, mengubah, atau menghapus data pengguna lain.
+- Foto Pemantauan Jerawat diperlakukan sebagai aset privat; penayangan, penggantian, dan penghapusan harus melalui otorisasi pemilik serta lifecycle aset yang terkendali.
 - Password harus disimpan dalam bentuk hash yang aman.
 - Kredensial dan secret tidak boleh dimasukkan ke repositori.
 
 ## 6. Di Luar Cakupan MVP
 
 Untuk menjaga fokus, versi pertama tidak mencakup:
-- Pelacakan setiap jerawat secara individual.
-- Riwayat penyembuhan setiap titik kulit.
-- Galeri perkembangan kulit.
+- Galeri perkembangan kulit atau timeline banyak foto untuk satu catatan. Keputusan fitur Pemantauan Jerawat kini mencakup catatan individual dan riwayat sembuh, dengan foto opsional pada catatan; ini memperbarui batas cakupan yang lebih lama pada daftar ini.
 - Sistem level atau gamifikasi yang kompleks.
 - Pengingat rutin yang mengganggu.
 
@@ -260,9 +278,17 @@ MVP dianggap memenuhi tujuan awal jika:
 9. Data antar-pengguna terisolasi dengan benar.
 10. Alur utama nyaman digunakan dari HP.
 
+**Kriteria penerimaan Pemantauan Jerawat**
+1. Pengguna dapat melihat catatan Aktif dan Riwayat sembuh, serta membuka detail setiap catatan.
+2. Pengguna dapat membuat catatan dengan nama, lokasi, dan tanggal mulai wajib; tanggal awal formulir adalah tanggal saat ini dan tanggal masa depan ditolak.
+3. Lokasi yang tersedia tepat sepuluh pilihan wajah yang tercantum pada bagian Pemantauan Jerawat.
+4. Pengguna dapat mengedit metadata tanpa mengubah status sembuh/tanggal sembuh, serta menandai catatan aktif sebagai sembuh.
+5. Penghapusan catatan meminta konfirmasi dan menjaga lifecycle aset foto.
+6. Foto opsional; jika digunakan, satu penanda merah wajib disimpan bersama foto dan penanda baru diperlukan saat foto diganti. Foto ditinjau dari detail sebagai aset privat.
+
 ## 8. Status Implementasi dan Verifikasi
 
-Status berikut merangkum audit kode. “Sudah diimplementasikan” berarti alur terkait ditemukan pada kode, bukan berarti sudah terverifikasi di browser atau terhadap database nyata.
+Status berikut merangkum audit kode. **Terimplementasi** berarti jalur implementasi ditemukan; **terimplementasi, belum terverifikasi** berarti jalur ada tetapi perilaku runtime belum dibuktikan; **sebagian terimplementasi** berarti hanya sebagian kebutuhan tersedia; **belum terimplementasi** berarti implementasi tidak ditemukan; **bermasalah** berarti ada kegagalan atau ketidaksesuaian konkret. Status fitur Pemantauan Jerawat mempertimbangkan kode yang diperiksa dan laporan runtime terbaru; bukan pengganti pengujian end-to-end.
 
 | Kebutuhan | Status implementasi berdasarkan audit kode | Status verifikasi |
 |---|---|---|
@@ -282,6 +308,16 @@ Status berikut merangkum audit kode. “Sudah diimplementasikan” berarti alur 
 | Pengingat deadline Pause: audio, preferensi lokal, izin/notifikasi sistem, dan navigasi klik notifikasi | Sudah diimplementasikan; detail perilaku dan batasannya dijelaskan pada bagian Fitur Pause | Tes Pause/reminder, termasuk klik service worker: 119/119 lulus pada audit sinkronisasi PRD. Uji manual sebelumnya dilaporkan berhasil untuk pengingat; perilaku terbaru yang memprioritaskan tab sumber saat klik notifikasi masih menunggu pengujian manual pengguna. |
 | Pengalaman keseluruhan di browser dan perangkat mobile | — | Belum diverifikasi end-to-end pada seluruh alur dan perangkat nyata. |
 | Alur login, registrasi, reset password, serta autentikasi Google dan email/password secara end-to-end | Implementasi kode tersedia pada jalur terkait | Belum diverifikasi end-to-end di lingkungan produksi (layanan pihak ketiga seperti Resend dan Google OAuth live belum diuji). |
+| Halaman dan daftar Pemantauan Jerawat: filter Aktif/Riwayat sembuh, ringkasan catatan, dan detail | Terimplementasi, belum terverifikasi menyeluruh; pengguna melaporkan halaman testing dapat menampilkan daftar | Laporan runtime mengonfirmasi daftar tampil setelah migration testing; seluruh interaksi detail belum diverifikasi end-to-end secara independen. |
+| Lokasi wajah dan validasi nama/tanggal | Sebagian terimplementasi: sepuluh lokasi, nama wajib, dan validasi tanggal masa depan tersedia. Formulir create membiarkan tanggal kosong dan server mengisinya dengan tanggal Jakarta saat ini; ini belum sama dengan kebutuhan produk bahwa field wajib dan nilai awal sudah terisi. | Tes validasi terkait tersedia; perilaku default tanggal di browser belum diverifikasi. |
+| Create catatan dan idempotency create | Bermasalah: endpoint, validasi, ledger idempotency, dan transaksi tersedia, tetapi pengguna melaporkan tidak dapat membuat catatan; penyebab runtime belum dikonfirmasi dan keberhasilan create belum dibuktikan. | Belum ada percobaan manual create yang berhasil. Diagnosis server terbatas mencatat kode/metadata error Prisma tanpa payload pribadi; log dari percobaan berikutnya masih diperlukan. |
+| Edit metadata, termasuk mempertahankan status dan tanggal sembuh | Terimplementasi, belum terverifikasi; server hanya mengubah nama, lokasi, dan tanggal mulai, bukan status atau tanggal sembuh. | Jalur transaksi tersedia; belum ada verifikasi runtime end-to-end yang dilaporkan. |
+| Tandai sembuh dan pindah ke Riwayat sembuh | Terimplementasi, belum terverifikasi; operasi server mengubah status/tanggal sembuh dan UI meminta konfirmasi. | Belum diverifikasi end-to-end pada database testing. |
+| Hapus catatan dengan konfirmasi | Sebagian terimplementasi: endpoint DELETE tersedia dan menjadwalkan cleanup aset, tetapi UI yang diaudit tidak menyediakan aksi hapus atau dialog konfirmasi. | Belum diverifikasi end-to-end. |
+| Upload foto opsional saat create, upload foto dari API, dan penanda titik | Sebagian terimplementasi: server menerima foto dan memvalidasi satu pasangan koordinat penanda, tetapi form UI yang diaudit tidak menawarkan upload atau pemilihan penanda. | Belum diverifikasi end-to-end. |
+| Detail foto, pembesaran, dan penggantian dengan penanda baru | Sebagian terimplementasi: endpoint baca/ganti/hapus foto dan validasi penanda ada; UI detail hanya menyatakan foto tersimpan/belum ada dan tidak menampilkan atau memperbesar gambar maupun menawarkan penggantian. | Belum diverifikasi end-to-end. |
+| Privasi dan otorisasi catatan/foto | Terimplementasi pada jalur server yang diaudit: operasi membatasi query ke `userId`; endpoint foto memerlukan autentikasi pemilik dan menyajikan aset melalui URL privat bertenggat. | Belum diverifikasi dengan pengujian akses lintas pengguna di runtime. |
+| Idempotency operasi foto dan lifecycle cleanup | Sebagian terimplementasi: ledger foto, intent upload, dan pencatatan cleanup digunakan oleh API; tidak ditemukan worker/consumer repository yang memproses cleanup job. | Upload, recovery, dan cleanup belum diverifikasi end-to-end; pemrosesan cleanup di luar repository belum dipastikan. |
 
 ### Statistik dan keputusan yang masih terbuka
 

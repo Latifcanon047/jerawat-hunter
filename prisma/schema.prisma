@@ -33,6 +33,10 @@ model User {
   pauseSessions PauseSession[]
   pickingEvents PickingEvent[]
   resistances   Resistance[]
+  acneTrackings AcneTracking[]
+  photoUploadIntents PhotoUploadIntent[]
+  acneTrackingCreateRequests AcneTrackingCreateRequest[]
+  acneTrackingPhotoRequests AcneTrackingPhotoRequest[]
 }
 
 model Account {
@@ -122,6 +126,42 @@ enum ContextType {
   OTHER                 // Konteks lainnya
 }
 
+enum AcneLocation {
+  forehead
+  left_temple
+  right_temple
+  nose
+  left_cheek
+  right_cheek
+  around_mouth
+  chin
+  left_jaw
+  right_jaw
+}
+
+enum AcneTrackingStatus {
+  ACTIVE
+  HEALED
+}
+
+enum PhotoUploadIntentStatus {
+  PENDING
+  CLEANUP_QUEUED
+}
+
+enum AcneTrackingPhotoRequestStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum CloudinaryCleanupJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  DEAD
+}
+
 // -------------------------------------------------------------
 // MODEL SESI PAUSE
 // -------------------------------------------------------------
@@ -178,6 +218,101 @@ model PickingEvent {
 
   @@index([userId, recordedAt])
   @@index([userId, occurredAt])
+}
+
+// -------------------------------------------------------------
+// MODEL PEMANTAUAN JERAWAT DAN KORENG
+// -------------------------------------------------------------
+
+model AcneTracking {
+  id             String              @id @default(cuid())
+  userId         String
+  user           User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  name           String
+  location       AcneLocation
+  startedAt      DateTime            @db.Date
+  status         AcneTrackingStatus  @default(ACTIVE)
+  healedDate     DateTime?           @db.Date
+  photoPublicId  String?             @unique
+  photoWidth     Int?
+  photoHeight    Int?
+  markerX        Float?
+  markerY        Float?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  photoUploadIntents PhotoUploadIntent[]
+
+  @@index([userId, status, startedAt])
+}
+
+model AcneTrackingCreateRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  requestKey  String   @db.VarChar(128)
+  fingerprint String   @db.VarChar(64)
+  trackingId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, requestKey])
+  @@index([trackingId])
+}
+
+model AcneTrackingPhotoRequest {
+  id          String                           @id @default(cuid())
+  userId      String
+  user        User                             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  trackingId  String
+  requestKey  String                           @db.VarChar(128)
+  fingerprint String                           @db.VarChar(64)
+  status      AcneTrackingPhotoRequestStatus   @default(PENDING)
+  intentId    String?                          @unique
+  intent      PhotoUploadIntent?               @relation(fields: [intentId], references: [id], onDelete: SetNull)
+  photoWidth  Int?
+  photoHeight Int?
+  markerX     Float?
+  markerY     Float?
+  failureCode String?                          @db.VarChar(64)
+  createdAt   DateTime                         @default(now())
+  updatedAt   DateTime                         @updatedAt
+
+  @@unique([userId, trackingId, requestKey])
+  @@index([status, updatedAt])
+}
+
+model PhotoUploadIntent {
+  id             String                  @id @default(cuid())
+  userId         String
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  acneTrackingId String?
+  acneTracking   AcneTracking?           @relation(fields: [acneTrackingId], references: [id], onDelete: SetNull)
+  publicId       String                  @unique
+  status         PhotoUploadIntentStatus @default(PENDING)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  photoRequest AcneTrackingPhotoRequest?
+
+  @@index([status, createdAt])
+  @@index([acneTrackingId])
+}
+
+model CloudinaryCleanupJob {
+  id             String                    @id @default(cuid())
+  publicId       String                    @unique
+  status         CloudinaryCleanupJobStatus @default(PENDING)
+  attempts       Int                       @default(0)
+  nextAttemptAt  DateTime                  @default(now())
+  lockedUntil    DateTime?
+  lastError      String?                   @db.VarChar(500)
+  lastAttemptAt  DateTime?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([status, lockedUntil])
 }
 
 // -------------------------------------------------------------
