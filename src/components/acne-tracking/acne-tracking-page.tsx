@@ -80,6 +80,8 @@ const locations: { value: AcneLocation; label: string }[] = [
 
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
+const MAX_PHOTO_SIDE = 1600;
 
 async function readApiResponse<T>(response: Response): Promise<T> {
   let payload: ApiResponse<T>;
@@ -123,6 +125,34 @@ function jakartaToday(): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+async function shrinkPhoto(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(
+      1,
+      MAX_PHOTO_SIDE / Math.max(bitmap.width, bitmap.height),
+    );
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas tidak tersedia.");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(bitmap, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.8),
+    );
+    if (!blob) throw new Error("Gagal membuat JPEG.");
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "foto";
+    return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+  } finally {
+    bitmap.close();
+  }
+}
+
 export function AcneTrackingPage() {
   const { showToast } = useToast();
   const [status, setStatus] = useState<TrackingStatus>("ACTIVE");
@@ -145,6 +175,8 @@ export function AcneTrackingPage() {
   const [photoError, setPhotoError] = useState("");
   const [marker, setMarker] = useState<{ x: number; y: number } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoTokenRef = useRef(0);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
   const [photoFailedId, setPhotoFailedId] = useState<string | null>(null);
   const [photoLoadedId, setPhotoLoadedId] = useState<string | null>(null);
   const [photoZoomedId, setPhotoZoomedId] = useState<string | null>(null);
@@ -238,6 +270,8 @@ export function AcneTrackingPage() {
   }, []);
 
   function clearPhoto() {
+    photoTokenRef.current += 1;
+    setPhotoProcessing(false);
     if (photoInputRef.current) photoInputRef.current.value = "";
     setPhotoFile(null);
     setPhotoPreviewUrl(null);
@@ -246,28 +280,44 @@ export function AcneTrackingPage() {
     createKeyRef.current = null;
   }
 
-  function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+  async function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.target;
+    const file = input.files?.[0];
     if (!file) return;
+    const token = ++photoTokenRef.current;
     setMarker(null);
     createKeyRef.current = null;
-    if (!PHOTO_TYPES.includes(file.type)) {
-      setPhotoFile(null);
-      setPhotoPreviewUrl(null);
-      setPhotoError("Foto harus berupa JPEG, PNG, atau WebP.");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      setPhotoFile(null);
-      setPhotoPreviewUrl(null);
-      setPhotoError("Ukuran foto maksimal 3 MB.");
-      event.target.value = "";
-      return;
-    }
+    setPhotoFile(null);
+    setPhotoPreviewUrl(null);
     setPhotoError("");
-    setPhotoFile(file);
-    setPhotoPreviewUrl(URL.createObjectURL(file));
+    if (!PHOTO_TYPES.includes(file.type)) {
+      setPhotoError("Foto harus berupa JPEG, PNG, atau WebP.");
+      input.value = "";
+      return;
+    }
+    if (file.size > MAX_SOURCE_BYTES) {
+      setPhotoError("Ukuran foto asli maksimal 25 MB.");
+      input.value = "";
+      return;
+    }
+    setPhotoProcessing(true);
+    try {
+      const shrunk = await shrinkPhoto(file);
+      if (token !== photoTokenRef.current) return;
+      if (shrunk.size > MAX_PHOTO_BYTES) {
+        setPhotoError("Foto masih terlalu besar setelah diperkecil.");
+        input.value = "";
+        return;
+      }
+      setPhotoFile(shrunk);
+      setPhotoPreviewUrl(URL.createObjectURL(shrunk));
+    } catch {
+      if (token !== photoTokenRef.current) return;
+      setPhotoError("Foto tidak dapat diproses. Coba foto lain.");
+      input.value = "";
+    } finally {
+      if (token === photoTokenRef.current) setPhotoProcessing(false);
+    }
   }
 
   function placeMarker(event: MouseEvent<HTMLImageElement>) {
@@ -316,7 +366,7 @@ export function AcneTrackingPage() {
 
   async function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pending) return;
+    if (pending || photoProcessing) return;
     if (panel?.type === "create" && photoFile && !marker) {
       setFormError(
         "Ketuk foto untuk menandai letak jerawat sebelum menyimpan.",
@@ -635,12 +685,17 @@ export function AcneTrackingPage() {
         ref={photoInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        onChange={choosePhoto}
+        onChange={(event) => void choosePhoto(event)}
         className="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-xl file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal-800"
       />
       {photoError && (
         <p role="alert" className="text-sm leading-6 text-rose-700">
           {photoError}
+        </p>
+      )}
+      {photoProcessing && (
+        <p role="status" className="text-sm font-normal text-neutral-600">
+          Memproses foto...
         </p>
       )}
       {photoFile && photoPreviewUrl && (
@@ -892,7 +947,7 @@ export function AcneTrackingPage() {
               </button>
               <button
                 type="submit"
-                disabled={pending}
+                disabled={pending || photoProcessing}
                 className="min-h-11 rounded-xl bg-teal-800 px-5 font-semibold text-white hover:bg-teal-900 disabled:opacity-60"
               >
                 {pending
