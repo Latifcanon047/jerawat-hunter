@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const acneLocations = [
+export const acneLocations = [
   "forehead",
   "left_temple",
   "right_temple",

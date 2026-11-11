@@ -5,12 +5,14 @@ import {
   useEffect,
   useRef,
   useState,
+  Suspense,
   type ChangeEvent,
   type FormEvent,
   type MouseEvent,
 } from "react";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/lib/toast-context";
+import { HealingAveragePanel } from "@/components/acne-tracking/healing-average-panel";
 
 type TrackingStatus = "ACTIVE" | "HEALED";
 type AcneLocation =
@@ -65,7 +67,7 @@ type Panel =
   | { type: "removePhoto"; trackingId: string }
   | null;
 
-const locations: { value: AcneLocation; label: string }[] = [
+export const locations: { value: AcneLocation; label: string }[] = [
   { value: "forehead", label: "Dahi" },
   { value: "left_temple", label: "Pelipis kiri" },
   { value: "right_temple", label: "Pelipis kanan" },
@@ -754,6 +756,19 @@ export function AcneTrackingPage() {
           Tambah jerawat
         </button>
       </div>
+
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-600 shadow-sm sm:p-5"
+          >
+            Memuat rata-rata sembuh...
+          </div>
+        }
+      >
+        <HealingAveragePanel locations={locations} />
+      </Suspense>
 
       <div className="flex gap-2" aria-label="Filter status pemantauan">
         {(["ACTIVE", "HEALED"] as const).map((value) => (
