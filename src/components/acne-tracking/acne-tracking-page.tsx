@@ -158,6 +158,7 @@ async function shrinkPhoto(file: File): Promise<File> {
 export function AcneTrackingPage() {
   const { showToast } = useToast();
   const [status, setStatus] = useState<TrackingStatus>("ACTIVE");
+  const [healingRefresh, setHealingRefresh] = useState(0);
   const [page, setPage] = useState(1);
   const [list, setList] = useState<ListResponse | null>(null);
   const [listLoading, setListLoading] = useState(true);
@@ -614,6 +615,7 @@ export function AcneTrackingPage() {
       setSelected(record);
       setPanel({ type: "detail", trackingId });
       showToast("success", "Jerawat ditandai sudah sembuh.");
+      setHealingRefresh((current) => current + 1);
       await loadList(page, status);
     } catch (error) {
       const message =
@@ -767,7 +769,10 @@ export function AcneTrackingPage() {
           </div>
         }
       >
-        <HealingAveragePanel locations={locations} />
+        <HealingAveragePanel
+          locations={locations}
+          refreshSignal={healingRefresh}
+        />{" "}
       </Suspense>
 
       <div className="flex gap-2" aria-label="Filter status pemantauan">

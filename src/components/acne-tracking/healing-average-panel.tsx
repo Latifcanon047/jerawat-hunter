@@ -35,8 +35,10 @@ function formatDays(value: number | null): string {
 
 export function HealingAveragePanel({
   locations,
+  refreshSignal,
 }: {
   locations: LocationOption[];
+  refreshSignal: number;
 }) {
   const nowParts = useMemo(() => getJakartaDateParts(new Date()), []);
   const locationOptions = useMemo(
@@ -109,6 +111,13 @@ export function HealingAveragePanel({
       requestGuardRef.current?.invalidate();
     };
   }, [load, initialFilter]);
+
+  const lastRefreshSignalRef = useRef(refreshSignal);
+  useEffect(() => {
+    if (lastRefreshSignalRef.current === refreshSignal) return;
+    lastRefreshSignalRef.current = refreshSignal;
+    void load(applied);
+  }, [refreshSignal, applied, load]);
 
   const availableYears = useMemo(() => {
     const list: number[] = [];
